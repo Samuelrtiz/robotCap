@@ -24,8 +24,23 @@
         .navbar { background-color: var(--navbar-bg) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
-        /* ESTILO HEADERS (Renglón Verde) */
-        .card { border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        /* CORRECCIÓN 1: Soporte de color dinámico para tarjetas */
+        .card { 
+            border-radius: 16px; 
+            overflow: hidden; 
+            border: 1px solid rgba(0,0,0,0.1); 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            background-color: var(--bs-card-bg); /* Usa variable de Bootstrap */
+        }
+        
+        /* CORRECCIÓN 2: Barra de herramientas admin adaptable */
+        .admin-toolbar {
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid var(--robot-green);
+            background-color: var(--bs-tertiary-bg); /* Se adapta al tema */
+        }
+
         .card-header-custom { 
             background-color: var(--robot-green) !important; 
             color: white !important; 
@@ -58,16 +73,26 @@
             100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
         }
 
+        /* CORRECCIÓN 3: Estilo de celdas del heatmap */
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; cursor: help; transition: 0.2s; }
-        .heatmap-cell:hover { transform: scale(1.1); filter: brightness(1.2); border: 1px solid white; }
+        .heatmap-cell { 
+            aspect-ratio: 1; 
+            border-radius: 4px; 
+            background-color: var(--robot-accent); 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        [data-bs-theme="dark"] .heatmap-cell { background-color: #222; } /* Fondo base en oscuro */
+        [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; } /* Fondo base en claro */
+
+        .heatmap-cell:hover { transform: scale(1.1); filter: brightness(1.2); border: 1px solid var(--robot-green); }
 
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .table-mini { font-size: 0.75rem; }
 
-        footer { border-top: 1px solid rgba(255,255,255,0.1); padding: 2rem 0; margin-top: 3rem; }
+        footer { border-top: 1px solid rgba(128,128,128,0.2); padding: 2rem 0; margin-top: 3rem; }
         .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; }
     </style>
 </head>
@@ -87,13 +112,13 @@
 
 <div class="container mt-4">
     <div class="row g-3 mb-4 text-center">
-        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">TOTAL TAPITAS</div><div class="card-body bg-dark py-3"><h2 id="stat-tapitas" class="fw-bold m-0 text-success">0</h2></div></div></div>
-        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">PESO ACUMULADO</div><div class="card-body bg-dark py-3"><h2 id="stat-peso" class="fw-bold m-0 text-success">0g</h2></div></div></div>
+        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">TOTAL TAPITAS</div><div class="card-body py-3"><h2 id="stat-tapitas" class="fw-bold m-0 text-success">0</h2></div></div></div>
+        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">PESO ACUMULADO</div><div class="card-body py-3"><h2 id="stat-peso" class="fw-bold m-0 text-success">0g</h2></div></div></div>
         <div class="col-md-4">
             <div class="card border-0">
                 <div class="card-header-custom">NIVEL CONTENEDOR: <span id="fill-pct">0%</span></div>
-                <div class="card-body bg-dark py-3 px-4">
-                    <div class="progress" style="height: 15px; background-color: rgba(255,255,255,0.1);">
+                <div class="card-body py-3 px-4">
+                    <div class="progress" style="height: 15px; background-color: rgba(128,128,128,0.2);">
                         <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success progress-bar-animated-custom" style="width: 0%"></div>
                     </div>
                 </div>
@@ -110,7 +135,7 @@
         </div>
         <div class="col-md-7">
             <div class="card">
-                <div class="card-header-custom">🔥 Mapa de Calor: Actividad (Pasa el mouse para ver detalle)</div>
+                <div class="card-header-custom">🔥 Mapa de Calor: Actividad</div>
                 <div class="card-body-custom">
                     <div id="heatmap-container" class="heatmap-grid mb-2"></div>
                     <div class="d-flex justify-content-between small text-muted"><span>Lunes</span><span>Domingo</span></div>
@@ -131,7 +156,7 @@
 
     <div id="admin-view" class="row g-4 admin-only">
         <div class="col-12">
-            <div class="card bg-dark border-success p-3">
+            <div class="admin-toolbar">
                 <div class="row g-2">
                     <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100">⚖️ Calibrar HX711</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100">🔄 Reiniciar MQTT</button></div>
@@ -214,7 +239,6 @@
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const fechaDoc = new Date().toLocaleString();
         doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
         doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
         doc.setFontSize(10); doc.setTextColor(100);
@@ -228,14 +252,14 @@
 
     async function cargarDatos() {
         const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
-        if (resumen) {
+        if (resumen && resumen.length > 0) {
             document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
             document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(0) + "g";
             renderUserCharts(resumen);
         }
 
         const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
-        if (eventos) {
+        if (eventos && eventos.length > 0) {
             datosEventos = eventos;
             const nivel = eventos[0].nivel_pct;
             document.getElementById('fill-pct').innerText = nivel + "%";
@@ -246,6 +270,7 @@
         }
     }
 
+    // CORRECCIÓN: Lógica de heatmap y tooltips
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
         container.innerHTML = '';
@@ -254,8 +279,14 @@
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
             d.style.opacity = (tapitasRandom / 50) + 0.1;
-            d.style.background = 'var(--robot-accent)';
-            d.title = `Tapitas recolectadas: ${tapitasRandom}`; 
+            // Estilo directo para asegurar visibilidad de color
+            d.style.backgroundColor = 'var(--robot-accent)';
+            
+            // Atributos para que Bootstrap o el navegador muestren el dato
+            d.setAttribute('data-bs-toggle', 'tooltip');
+            d.setAttribute('title', `Tapitas: ${tapitasRandom}`);
+            d.innerText = ''; // Limpiar contenido previo
+            
             container.appendChild(d);
         }
     }
@@ -296,13 +327,13 @@
     function gestionarTema() {
         const btn = document.getElementById('btn-theme-toggle');
         btn.onclick = () => {
-            const theme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', theme);
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
         };
     }
 
     function configurarAuth() {
-        // CORRECCIÓN: Evento de cambio de sesión
         _supabase.auth.onAuthStateChange((event, session) => {
             const badge = document.getElementById('user-role');
             const btnShowLogin = document.getElementById('btn-show-login');
@@ -324,26 +355,16 @@
                 adminView.classList.add('admin-only');
                 userView.classList.remove('admin-only');
                 btnShowLogin.classList.remove('d-none');
-                btnShowLogin.classList.remove('d-none'); // Reset visibility
                 btnLogout.classList.add('d-none');
             }
         });
 
-        // CORRECCIÓN: Lógica del botón de login dentro del modal
         document.getElementById('btn-do-login').onclick = async () => {
             const email = document.getElementById('in-email').value;
             const password = document.getElementById('in-pass').value;
-            
             const { error } = await _supabase.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                alert("Error: " + error.message);
-            } else {
-                // Cerrar modal tras éxito
-                const modalEl = document.getElementById('loginModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                modal.hide();
-            }
+            if (error) alert("Error: " + error.message);
+            else bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
         };
 
         document.getElementById('btn-logout').onclick = async () => { 
