@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap v3.7 | Dashboard Híbrido FACCI</title>
+    <title>RobotCap v3.8 | Dashboard Híbrido FACCI</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         :root { 
@@ -21,7 +24,6 @@
         .navbar { background-color: var(--navbar-bg) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
-        /* TEMA TOGGLE */
         .theme-switch { width: 50px; height: 24px; background: #333; border-radius: 20px; position: relative; cursor: pointer; border: 1px solid #555; }
         .theme-switch .dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 3px; transition: 0.3s; }
         [data-bs-theme="light"] .theme-switch { background: #ced4da; }
@@ -35,7 +37,7 @@
         .h-large { height: 350px; }
         .h-gauge { height: 280px; }
         
-        /* ANIMACIÓN DE BARRA DE PROGRESO (Regresada) */
+        /* ANIMACIÓN DE PULSO */
         .progress-bar-animated-custom {
             animation: progress-bar-stripes 1s linear infinite, pulse-green 2s infinite;
         }
@@ -46,17 +48,14 @@
             100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
         }
 
-        /* HEATMAP */
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; position: relative; transition: 0.3s; }
 
-        /* ADMIN EXTRAS */
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .table-mini { font-size: 0.75rem; }
 
-        /* FOOTER (Regresado) */
         footer { border-top: 1px solid rgba(255,255,255,0.1); padding: 2rem 0; margin-top: 3rem; }
         .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; }
     </style>
@@ -106,7 +105,7 @@
                 <div class="row g-2">
                     <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100">⚖️ Calibrar HX711</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100">🔄 Reiniciar MQTT</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100">📄 Reporte Ahora</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="generarPDF()">📄 Reporte Ahora</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100">🧹 Reset Contador</button></div>
                 </div>
             </div>
@@ -141,7 +140,7 @@
 
     <footer class="text-center">
         <p class="disclaimer mb-2">
-            <strong>Nota:</strong> Los datos mostrados en este panel (Mapa de calor y comparativos) pueden ser simulados para fines de demostración técnica de la interfaz v3.7.
+            <strong>Nota:</strong> Los datos mostrados en este panel (Mapa de calor y comparativos) pueden ser simulados para fines de demostración técnica de la interfaz v3.8.
         </p>
         <p class="mb-0 small text-muted">
             © 2026 RobotCap Project | Facultad de Ciencias e Ingeniería (FACCI) <br>
@@ -173,6 +172,62 @@
         gestionarTema();
         await cargarDatos();
         configurarAuth();
+    }
+
+    // --- FUNCIÓN PARA GENERAR PDF ---
+    function generarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const fechaDoc = new Date().toLocaleString();
+
+        // Encabezado Institucional
+        doc.setFontSize(18);
+        doc.setTextColor(25, 135, 84); // Verde RobotCap
+        doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Facultad de Ciencias e Ingeniería (FACCI) - UNPHU", 14, 28);
+        doc.text(`Fecha de generación: ${fechaDoc}`, 14, 34);
+        doc.line(14, 38, 196, 38);
+
+        // Resumen de Estado
+        const totalTapitas = document.getElementById('stat-tapitas').innerText;
+        const totalPeso = document.getElementById('stat-peso').innerText;
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Resumen General:`, 14, 48);
+        doc.text(`- Tapitas Totales: ${totalTapitas}`, 14, 56);
+        doc.text(`- Peso Acumulado: ${totalPeso}`, 14, 64);
+
+        // Tabla de datos
+        const columns = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
+        const rows = datosEventos.map(e => [
+            new Date(e.timestamp).toLocaleString(),
+            e.peso_delta_g + "g",
+            e.tapitas_estimadas,
+            e.nivel_pct + "%",
+            e.robot_id
+        ]);
+
+        doc.autoTable({
+            startY: 72,
+            head: [columns],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [25, 135, 84] }, // Verde Institucional
+            styles: { fontSize: 8 }
+        });
+
+        // Advertencia y Copyright
+        const finalY = doc.lastAutoTable.finalY || 150;
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text("Datos generados automáticamente desde el sistema RobotCap. Algunos valores pueden ser simulados.", 14, finalY + 10);
+        doc.text("© 2026 Universidad Nacional Pedro Henríquez Ureña (UNPHU).", 14, finalY + 15);
+
+        // Descargar
+        doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
     }
 
     function gestionarTema() {
