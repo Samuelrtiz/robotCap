@@ -89,8 +89,8 @@
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .table-mini { font-size: 0.75rem; }
         
-        /* Ajuste para que el texto de la tabla se alinee con los badges agrandados */
-        .table-mini td { vertical-align: middle; }
+        /* Alineación perfecta para los nuevos badges */
+        .table-mini td { vertical-align: middle !important; }
 
         footer { border-top: 1px solid rgba(128,128,128,0.2); padding: 2rem 0; margin-top: 3rem; }
         .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; }
@@ -372,7 +372,7 @@
         });
     }
 
-    // FUNCIÓN ACTUALIZADA: Badges agrandados para mejor lectura
+    // FUNCIÓN ACTUALIZADA: Punto medio para equilibrio visual (95px de ancho)
     function actualizarTablaAdmin(data) {
         document.getElementById('admin-table-body').innerHTML = data.slice(0,10).map(e => {
             let badgeClass = "bg-success"; 
@@ -393,7 +393,7 @@
                     <td>${e.tapitas_estimadas}</td>
                     <td>
                         <span class="badge ${badgeClass}" 
-                              style="min-width: 110px; padding: 8px 12px; font-size: 0.85rem; letter-spacing: 0.5px; display: inline-block;">
+                              style="min-width: 95px; padding: 5px 10px; font-size: 0.8rem; display: inline-block;">
                             ${e.nivel_pct}% - ${label}
                         </span>
                     </td>
