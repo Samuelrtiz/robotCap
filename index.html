@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="es" data-bs-theme="dark"> <head>
+<html lang="es" data-bs-theme="dark">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap | Sistema de Reciclaje Inteligente</title>
+    <title>RobotCap | Dashboard Pro</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,19 +12,15 @@
     <style>
         :root {
             --robot-green: #198754;
-            --robot-light-green: #2ecc71;
+            --robot-accent: #2ecc71;
         }
         body { background-color: #0b0f13; color: #e9ecef; }
         .navbar { border-bottom: 2px solid var(--robot-green); background-color: #1a1d20 !important; }
-        .btn-green { background-color: var(--robot-green); color: white; border: none; }
-        .btn-green:hover { background-color: var(--robot-light-green); }
+        .text-green { color: var(--robot-accent) !important; }
         .card { background-color: #1a1d20; border: 1px solid #2d3238; border-radius: 15px; }
         .card-stat { border-top: 4px solid var(--robot-green); }
-        .text-green { color: var(--robot-light-green) !important; }
-        .chart-container { position: relative; height: 250px; }
-        
-        /* Estilo para ocultar cosas de Admin si no está logueado */
-        .admin-only { display: none; }
+        .chart-container { position: relative; height: 220px; }
+        .admin-only { display: none; } /* Oculto por defecto */
     </style>
 </head>
 <body>
@@ -32,8 +29,8 @@
     <div class="container">
         <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
         <div class="d-flex align-items-center">
-            <span id="user-role" class="badge bg-secondary me-2">Invitado</span>
-            <button class="btn btn-outline-success btn-sm" id="btn-login">Acceder</button>
+            <span id="user-role" class="badge bg-secondary me-3">Invitado</span>
+            <button class="btn btn-outline-success btn-sm" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">Acceder</button>
             <button class="btn btn-outline-danger btn-sm d-none" id="btn-logout">Salir</button>
         </div>
     </div>
@@ -42,20 +39,20 @@
 <div class="container mt-4">
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card card-stat p-3 text-center">
-                <div class="text-muted small">TAPITAS TOTALES</div>
-                <div class="display-6 fw-bold text-green" id="stat-total-tapitas">0</div>
+            <div class="card card-stat p-3 text-center shadow">
+                <div class="text-muted small mb-1">TAPITAS TOTALES</div>
+                <div class="h2 fw-bold text-green" id="stat-total-tapitas">0</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card card-stat p-3 text-center">
-                <div class="text-muted small">PESO RECOLECTADO</div>
-                <div class="display-6 fw-bold" id="stat-total-peso">0.0g</div>
+            <div class="card card-stat p-3 text-center shadow">
+                <div class="text-muted small mb-1">PESO ACUMULADO</div>
+                <div class="h2 fw-bold" id="stat-total-peso">0.0g</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card card-stat p-3">
-                <div class="text-muted small text-center mb-2">NIVEL DE LLENADO</div>
+            <div class="card card-stat p-3 shadow">
+                <div class="text-muted small text-center mb-2">LLENADO DEL CONTENEDOR</div>
                 <div class="progress" style="height: 25px;">
                     <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%">0%</div>
                 </div>
@@ -63,44 +60,61 @@
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-8">
-            <div class="card p-3 h-100">
-                <h6 class="text-muted mb-3">Recolección Diaria (Tapitas)</h6>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card p-3 shadow-sm h-100">
+                <h6 class="text-muted border-bottom pb-2 mb-3">Historial de Recolección (7 días)</h6>
                 <div class="chart-container"><canvas id="chartLineal"></canvas></div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card p-3 h-100">
-                <h6 class="text-muted mb-3">Capacidad del Robot</h6>
-                <div class="chart-container"><canvas id="chartDona"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card p-3">
-                <h6 class="text-muted mb-3">Comparativa de Pesos (g)</h6>
+        <div class="col-lg-5">
+            <div class="card p-3 shadow-sm h-100">
+                <h6 class="text-muted border-bottom pb-2 mb-3">Distribución de Carga (g)</h6>
                 <div class="chart-container"><canvas id="chartBarras"></canvas></div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card p-3">
-                <h6 class="text-muted mb-3 text-center">Panel de Control (Admin)</h6>
-                <div class="d-flex justify-content-around align-items-center h-100 py-4">
-                    <button class="btn btn-danger admin-only" id="btn-vaciar">Vaciar Contenedor</button>
-                    <p class="text-muted" id="admin-msg">Inicie sesión como administrador para ver controles.</p>
+            <div class="card p-3 shadow-sm">
+                <h6 class="text-muted border-bottom pb-2 mb-3 text-center">Capacidad Actual</h6>
+                <div class="chart-container"><canvas id="chartDona"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm d-flex flex-column justify-content-center align-items-center">
+                <h6 class="text-muted border-bottom pb-2 mb-3 w-100 text-center">Panel de Control</h6>
+                <div class="admin-only text-center">
+                    <button class="btn btn-danger px-4 py-2" onclick="alert('Contenedor Vaciado (Simulado)')">VACIAR CONTENEDOR</button>
+                    <p class="text-danger mt-2 small">Acción irreversible para Administradores</p>
                 </div>
+                <div id="admin-msg" class="text-muted italic">Inicie sesión como Admin para ver controles.</div>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-success">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">🔐 Acceso al Sistema</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-dark">
+        <input type="email" id="login-email" class="form-control mb-3" placeholder="Email">
+        <input type="password" id="login-pass" class="form-control mb-3" placeholder="Contraseña">
+        <button class="btn btn-success w-100" id="btn-do-login">Iniciar Sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Objetos de las gráficas
-    let chartLine, chartDoughnut, chartBar;
+    let chartLine, chartBar, chartDona;
 
     async function init() {
         await cargarDatos();
@@ -108,9 +122,10 @@
         configurarRealtime();
     }
 
+    // --- CARGA DE DATOS ---
     async function cargarDatos() {
         const { data, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
-        if (error) return;
+        if (error || !data.length) return;
 
         const fechas = data.map(d => d.fecha).reverse();
         const tapitas = data.map(d => d.total_tapitas).reverse();
@@ -118,62 +133,90 @@
 
         actualizarGraficas(fechas, tapitas, pesos);
         
-        // Totales en tarjetas
         document.getElementById('stat-total-tapitas').innerText = tapitas.reduce((a,b) => a+b, 0);
         document.getElementById('stat-total-peso').innerText = pesos.reduce((a,b) => a+b, 0).toFixed(1) + "g";
     }
 
     function actualizarGraficas(fechas, tapitas, pesos) {
-        const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+        const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
-        // 1. Gráfica Lineal (Tendencia)
+        // Gráfica Lineal
         if (chartLine) chartLine.destroy();
         chartLine = new Chart(document.getElementById('chartLineal'), {
             type: 'line',
-            data: { labels: fechas, datasets: [{ data: tapitas, borderColor: '#2ecc71', tension: 0.3, fill: true, backgroundColor: 'rgba(25, 135, 84, 0.1)' }] },
-            options: commonOptions
+            data: { labels: fechas, datasets: [{ data: tapitas, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.3 }] },
+            options: opts
         });
 
-        // 2. Gráfica de Barras (Peso)
+        // Gráfica de Barras
         if (chartBar) chartBar.destroy();
         chartBar = new Chart(document.getElementById('chartBarras'), {
             type: 'bar',
             data: { labels: fechas, datasets: [{ data: pesos, backgroundColor: '#198754' }] },
-            options: commonOptions
+            options: opts
         });
 
-        // 3. Gráfica de Dona (Capacidad - Simulada con último nivel)
-        const ultimoNivel = 65; // Ejemplo: Deberías traer el nivel real
-        if (chartDoughnut) chartDoughnut.destroy();
-        chartDoughnut = new Chart(document.getElementById('chartDona'), {
+        // Gráfica Dona (Simulada con el último nivel registrado)
+        const ultimoNivel = 75; 
+        if (chartDona) chartDona.destroy();
+        chartDona = new Chart(document.getElementById('chartDona'), {
             type: 'doughnut',
-            data: { 
-                labels: ['Lleno', 'Libre'], 
-                datasets: [{ data: [ultimoNivel, 100-ultimoNivel], backgroundColor: ['#198754', '#2d3238'], borderWidth: 0 }] 
-            },
-            options: { cutout: '80%', ...commonOptions }
+            data: { labels: ['Lleno', 'Libre'], datasets: [{ data: [ultimoNivel, 100-ultimoNivel], backgroundColor: ['#198754', '#212529'], borderWidth: 0 }] },
+            options: { cutout: '80%', ...opts }
         });
+        document.getElementById('progress-bar').style.width = ultimoNivel + "%";
+        document.getElementById('progress-bar').innerText = ultimoNivel + "%";
     }
 
-    // Lógica Simple de Roles (Simulada para demostración inicial)
+    // --- AUTENTICACIÓN REAL ---
     function configurarAuth() {
-        document.getElementById('btn-login').onclick = () => {
-            const pass = prompt("Ingrese clave de Admin:");
-            if(pass === "robot123") { // Lógica simple para tu prototipo
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-                document.getElementById('admin-msg').style.display = 'none';
-                document.getElementById('user-role').innerText = "Administrador";
-                document.getElementById('user-role').className = "badge bg-success me-2";
-                document.getElementById('btn-login').classList.add('d-none');
-                document.getElementById('btn-logout').classList.remove('d-none');
+        const modalLogin = new bootstrap.Modal('#loginModal');
+
+        document.getElementById('btn-do-login').onclick = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass });
+
+            if (error) {
+                alert("Error: " + error.message);
+            } else {
+                modalLogin.hide();
+                verificarRol(data.user);
             }
         };
 
-        document.getElementById('btn-logout').onclick = () => location.reload();
+        document.getElementById('btn-logout').onclick = async () => {
+            await _supabase.auth.signOut();
+            location.reload();
+        };
+
+        // Detectar sesión activa al cargar
+        _supabase.auth.onAuthStateChange((event, session) => {
+            if (session) verificarRol(session.user);
+        });
+    }
+
+    function verificarRol(user) {
+        if (!user) return;
+        const role = user.user_metadata.role;
+
+        if (role === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.getElementById('admin-msg').style.display = 'none';
+            document.getElementById('user-role').innerText = "ADMIN";
+            document.getElementById('user-role').className = "badge bg-danger me-3";
+        } else {
+            document.getElementById('user-role').innerText = "USUARIO";
+            document.getElementById('user-role').className = "badge bg-info me-3";
+        }
+
+        document.getElementById('btn-show-login').classList.add('d-none');
+        document.getElementById('btn-logout').classList.remove('d-none');
     }
 
     function configurarRealtime() {
-        _supabase.channel('custom-insert-channel').on('postgres_changes', 
+        _supabase.channel('db-changes').on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, 
         () => cargarDatos()).subscribe();
     }
