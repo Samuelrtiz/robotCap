@@ -191,7 +191,20 @@
                     <button class="btn btn-xs btn-light py-0 px-2" style="font-size: 0.7rem;" onclick="exportarCSV()">Exportar tabla a CSV</button>
                 </div>
                 <div class="card-body-custom p-0">
-                    <div class="table-responsive" style="max-height: 300px;"><table class="table table-sm table-hover table-mini mb-0"><thead class="table-dark"><tr><th>Fecha/Hora</th><th>Gramos</th><th>Tapitas</th><th>Nivel %</th><th>ID Robot</th></tr></thead><tbody id="admin-table-body"></tbody></table></div>
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-hover table-mini mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha/Hora</th>
+                                    <th>Gramos</th>
+                                    <th>Tapitas</th>
+                                    <th>Estado Llenado</th>
+                                    <th>ID Robot</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -306,8 +319,6 @@
         
         for(let i=0; i<28; i++) {
             const tapitasRandom = Math.floor(Math.random() * 50);
-            
-            // Simulación de hora aleatoria
             const hora = Math.floor(Math.random() * 24).toString().padStart(2, '0');
             const min = Math.floor(Math.random() * 60).toString().padStart(2, '0');
             const horaSimulada = `${hora}:${min}`;
@@ -317,10 +328,9 @@
             d.style.opacity = (tapitasRandom / 50) + 0.1;
             d.style.backgroundColor = 'var(--robot-accent)';
             
-            // Configuración avanzada de tooltip
             d.setAttribute('data-bs-toggle', 'tooltip');
             d.setAttribute('data-bs-placement', 'top');
-            d.setAttribute('data-bs-html', 'true'); // Permite el uso de HTML (negritas y br)
+            d.setAttribute('data-bs-html', 'true');
             d.setAttribute('title', `<b>Hora:</b> ${horaSimulada}<br><b>Tapitas:</b> ${tapitasRandom}`);
             
             container.appendChild(d);
@@ -359,10 +369,35 @@
         });
     }
 
+    // FUNCIÓN ACTUALIZADA CON OPCIÓN 1: BADGES DINÁMICOS
     function actualizarTablaAdmin(data) {
-        document.getElementById('admin-table-body').innerHTML = data.slice(0,10).map(e => `
-            <tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${e.peso_delta_g}g</td><td>${e.tapitas_estimadas}</td><td>${e.nivel_pct}%</td><td>${e.robot_id}</td></tr>
-        `).join('');
+        document.getElementById('admin-table-body').innerHTML = data.slice(0,10).map(e => {
+            // Lógica de color y texto descriptivo
+            let badgeClass = "bg-success"; // Estado normal
+            let label = "Bajo";
+            
+            if (e.nivel_pct > 85) {
+                badgeClass = "bg-danger"; // Estado crítico
+                label = "CRÍTICO";
+            } else if (e.nivel_pct > 60) {
+                badgeClass = "bg-warning text-dark"; // Estado de atención
+                label = "Medio";
+            }
+
+            return `
+                <tr>
+                    <td>${new Date(e.timestamp).toLocaleString()}</td>
+                    <td>${e.peso_delta_g}g</td>
+                    <td>${e.tapitas_estimadas}</td>
+                    <td>
+                        <span class="badge ${badgeClass}" style="min-width: 85px;">
+                            ${e.nivel_pct}% - ${label}
+                        </span>
+                    </td>
+                    <td>${e.robot_id}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function gestionarTema() {
@@ -413,6 +448,13 @@
             await _supabase.auth.signOut(); 
             location.reload(); 
         };
+    }
+
+    init();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
     }
 
     init();
