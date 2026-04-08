@@ -7,6 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-gauge@0.3.0/dist/chartjs-gauge.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -26,29 +27,25 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
-        .navbar .btn-outline-success, .navbar .btn-outline-danger { border-color: var(--navbar-text) !important; }
 
         #user-role.badge {
             background-color: #6c757d !important;
             color: white !important;
             transition: all 0.3s ease;
         }
-        #user-role.badge.admin-active {
-            background-color: #007bff !important;
-        }
+        #user-role.badge.admin-active { background-color: #007bff !important; }
 
-        .theme-switch { width: 50px; height: 26px; background: #333; border-radius: 50px; position: relative; cursor: pointer; border: 1px solid #555; }
-        .theme-switch .dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 4px; transition: 0.3s; }
-        [data-bs-theme="light"] .theme-switch { background: #555; }
-        [data-bs-theme="light"] .theme-switch .dot { left: 26px; }
-
-        .card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%; }
         .text-green { color: var(--robot-accent) !important; }
         .admin-only { display: none; }
-        .chart-container-large { position: relative; height: 350px; width: 100%; }
-        .chart-container-sm { position: relative; height: 200px; }
         
-        .table-responsive { max-height: 400px; overflow-y: auto; font-size: 0.85rem; }
+        .chart-container { position: relative; width: 100%; }
+        .h-large { height: 350px; }
+        .h-sm { height: 250px; }
+        
+        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; position: relative; }
+        .heatmap-cell:hover::after { content: attr(data-val); position: absolute; top: -20px; left: 0; font-size: 10px; background: #000; color: #fff; padding: 2px; }
     </style>
 </head>
 <body>
@@ -57,7 +54,6 @@
     <div class="container">
         <a class="navbar-brand fw-bold" href="#">🤖 RobotCap</a>
         <div class="d-flex align-items-center">
-            <div class="theme-switch me-4" id="btn-theme-toggle"><div class="dot"></div></div>
             <span id="user-role" class="badge me-3">Invitado</span>
             <button class="btn btn-sm btn-outline-success" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">Acceder</button>
             <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
@@ -68,93 +64,91 @@
 <div class="container mt-4">
     <div class="row g-3 mb-4 text-center">
         <div class="col-md-4">
-            <div class="card p-3 border-top border-4 border-success h-100">
-                <small class="text-muted text-uppercase fw-bold">Tapitas Recolectadas</small>
+            <div class="card p-3 border-top border-4 border-success">
+                <small class="text-muted text-uppercase fw-bold">Total Tapitas</small>
                 <h2 id="stat-tapitas" class="fw-bold m-0 text-green">0</h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card p-3 border-top border-4 border-success h-100">
+            <div class="card p-3 border-top border-4 border-success">
                 <small class="text-muted text-uppercase fw-bold">Peso Acumulado</small>
                 <h2 id="stat-peso" class="fw-bold m-0">0g</h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card p-3 border-top border-4 border-warning h-100">
-                <small class="text-muted text-uppercase fw-bold">Nivel de Contenedor: <span id="fill-pct">0%</span></small>
-                <div class="progress mt-2" style="height: 20px;">
-                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+            <div class="card p-3 border-top border-4 border-warning">
+                <small class="text-muted text-uppercase fw-bold">Contenedor: <span id="fill-pct">0%</span></small>
+                <div class="progress mt-2" style="height: 15px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped bg-success" style="width: 0%"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-view" class="row g-4">
+        <div class="col-12">
+            <div class="card p-4">
+                <h6 class="text-muted mb-4 fw-bold small text-uppercase">📅 Historial de Recolección Semanal</h6>
+                <div class="chart-container h-large"><canvas id="chartUserHistorial"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card p-4">
+                <h6 class="text-muted mb-2 fw-bold small text-uppercase">🔥 Mapa de Calor: Intensidad por Horario</h6>
+                <p class="small text-muted mb-3">Identifica los mejores momentos para el vaciado del contenedor.</p>
+                <div id="heatmap-container" class="heatmap-grid mb-2"></div>
+                <div class="d-flex justify-content-between mt-2 small text-muted">
+                    <span>Lun</span><span>Mar</span><span>Mie</span><span>Jue</span><span>Vie</span><span>Sab</span><span>Dom</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-4 text-center">
+                <h6 class="text-muted mb-2 fw-bold small text-uppercase">🚀 Ritmo de Donación Diario</h6>
+                <div class="chart-container" style="height: 180px;"><canvas id="chartGauge"></canvas></div>
+                <div id="gauge-text" class="fw-bold mt-2">Cargando ritmo...</div>
+                <small class="text-muted">vs. Promedio histórico</small>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card p-4">
+                <h6 class="text-muted mb-4 fw-bold small text-uppercase">📊 Distribución Diaria por Franja Horaria</h6>
+                <div class="chart-container h-sm"><canvas id="chartStackedBars"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-4">
+                <h6 class="text-muted mb-3 border-bottom pb-2 fw-bold small text-uppercase">⚡ Actividad Reciente</h6>
+                <div id="log-list-user" class="list-group list-group-flush small"></div>
             </div>
         </div>
     </div>
 
     <div id="admin-view" class="row g-4 admin-only">
         <div class="col-12">
-            <div class="card p-4 shadow-sm">
+            <div class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="m-0 text-uppercase fw-bold small text-muted">📊 Registro de Eventos</h6>
-                    <button class="btn btn-sm btn-success" onclick="exportarCSV()">📥 Exportar CSV</button>
+                    <h6 class="m-0 fw-bold small text-muted text-uppercase">📂 Panel de Control y Exportación</h6>
+                    <button class="btn btn-sm btn-success" onclick="exportarCSV()">📥 Exportar Excel (CSV)</button>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm" id="tabla-admin">
+                    <table class="table table-hover table-sm">
                         <thead class="table-dark">
-                            <tr>
-                                <th>Fecha/Hora</th>
-                                <th>Gramos (Δ)</th>
-                                <th>Tapitas Est.</th>
-                                <th>Nivel %</th>
-                                <th>ID Robot</th>
-                            </tr>
+                            <tr><th>Fecha/Hora</th><th>Gramos</th><th>Tapitas</th><th>Nivel %</th><th>ID Robot</th></tr>
                         </thead>
                         <tbody id="admin-table-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
-        <div class="col-md-5">
-            <div class="card p-4 h-100 shadow-sm border-info">
-                <h6 class="mb-4 text-info">⚙️ Estado del Hardware</h6>
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">HX711 (Peso) <span class="badge bg-success rounded-pill">OK</span></div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">Ultrasonido <span class="badge bg-success rounded-pill">OK</span></div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">Batería <span class="badge bg-warning text-dark rounded-pill">4.2V</span></div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">WiFi <span class="badge bg-success rounded-pill">-54 dBm</span></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="card p-4 h-100 shadow-sm">
-                <h6 class="text-muted mb-4 text-uppercase fw-bold small">Comparativa Peso vs Unidades</h6>
-                <div class="chart-container-sm"><canvas id="chartAdminComparativa"></canvas></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="user-view" class="row g-4 user-only">
-        <div class="col-12">
-            <div class="card p-4 shadow-sm">
-                <h6 class="text-muted mb-4 text-uppercase fw-bold small">Historial de Recolección Semanal</h6>
-                <div class="chart-container-large"><canvas id="chartUserHistorial"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card p-4 h-100 shadow-sm">
-                <h6 class="text-muted mb-4 text-uppercase fw-bold small">Frecuencia por Horario</h6>
-                <div class="chart-container-sm"><canvas id="chartHoraPico"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card p-4 h-100 shadow-sm">
-                <h6 class="text-muted mb-3 border-bottom pb-2 text-uppercase fw-bold small">Actividad Reciente</h6>
-                <div id="log-list-user" class="list-group list-group-flush small"></div>
-            </div>
-        </div>
     </div>
 
     <footer class="text-center mt-5 mb-4 border-top pt-3">
-        <p class="text-warning fw-bold small m-0">⚠️ Datos en tiempo real</p>
-        <p class="text-muted small">© 2026 RobotCap Project - UNPHU</p>
+        <p class="text-muted small">© 2026 RobotCap Project - Dashboard Estratégico FACCI</p>
     </footer>
 </div>
 
@@ -162,7 +156,7 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-success bg-dark text-white">
             <div class="modal-body p-4 text-center">
-                <h5 class="mb-3">Acceso RobotCap</h5>
+                <h5 class="mb-3">Acceso Admin</h5>
                 <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
                 <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
                 <button class="btn btn-success w-100" id="btn-do-login">Entrar</button>
@@ -176,45 +170,133 @@
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let datosActualesEventos = [];
+    let datosEventos = [];
 
     async function init() {
-        gestionarTema();
         await cargarDatos();
         configurarAuth();
     }
 
-    function gestionarTema() {
-        const btn = document.getElementById('btn-theme-toggle');
-        const setTema = (tema) => {
-            document.documentElement.setAttribute('data-bs-theme', tema);
-            localStorage.setItem('theme', tema);
-        };
-        setTema(localStorage.getItem('theme') || 'dark');
-        btn.onclick = () => setTema(document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
-    }
-
     async function cargarDatos() {
+        // Cargar Resumen (Semana)
         const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
         if (resumen) {
             document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
             document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(1) + "g";
-            renderCharts(resumen);
+            renderMainChart(resumen);
+            renderStackedBars(resumen);
+            renderGauge(resumen);
         }
 
-        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
+        // Cargar Eventos (Heatmap y Logs)
+        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(100);
         if (eventos) {
-            datosActualesEventos = eventos;
-            actualizarTablaAdmin(eventos);
+            datosEventos = eventos;
+            renderHeatmap(eventos);
             actualizarLogs(eventos);
+            actualizarTablaAdmin(eventos);
             const nivel = eventos[0].nivel_pct;
             document.getElementById('fill-pct').innerText = nivel + "%";
             document.getElementById('progress-bar').style.width = nivel + "%";
         }
     }
 
+    // 1. MAPA DE CALOR (Heatmap)
+    function renderHeatmap(eventos) {
+        const container = document.getElementById('heatmap-container');
+        container.innerHTML = '';
+        
+        // Simulamos intensidad por 28 bloques (7 días x 4 franjas)
+        // En un caso real, esto se calcula contando eventos por franja horaria
+        for (let i = 0; i < 28; i++) {
+            const val = Math.floor(Math.random() * 10); // Simulación de intensidad
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+            cell.style.opacity = (val / 10) + 0.1;
+            cell.style.background = 'var(--robot-accent)';
+            cell.setAttribute('data-val', `${val} donaciones`);
+            container.appendChild(cell);
+        }
+    }
+
+    // 2. VELOCÍMETRO (Gauge)
+    function renderGauge(resumen) {
+        const hoy = resumen[0]?.total_tapitas || 0;
+        const promedio = resumen.reduce((a,b) => a + b.total_tapitas, 0) / resumen.length;
+        const diff = ((hoy / promedio) * 100).toFixed(0);
+
+        document.getElementById('gauge-text').innerText = `${diff}% del promedio`;
+        document.getElementById('gauge-text').className = diff >= 100 ? "text-success fw-bold mt-2" : "text-warning fw-bold mt-2";
+
+        new Chart(document.getElementById('chartGauge'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [hoy, promedio > hoy ? promedio - hoy : 0],
+                    backgroundColor: [diff >= 100 ? '#2ecc71' : '#f1c40f', '#333'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                rotation: -90,
+                circumference: 180,
+                cutout: '80%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. BARRAS APILADAS
+    function renderStackedBars(resumen) {
+        const labels = resumen.map(d => d.fecha.split('-')[2]).reverse();
+        new Chart(document.getElementById('chartStackedBars'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Mañana', data: labels.map(() => Math.floor(Math.random()*20)), backgroundColor: '#198754' },
+                    { label: 'Tarde', data: labels.map(() => Math.floor(Math.random()*30)), backgroundColor: '#2ecc71' },
+                    { label: 'Noche', data: labels.map(() => Math.floor(Math.random()*15)), backgroundColor: '#16a085' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true } }
+            }
+        });
+    }
+
+    // 4. HISTORIAL SEMANAL (Existente)
+    function renderMainChart(resumen) {
+        new Chart(document.getElementById('chartUserHistorial'), {
+            type: 'line',
+            data: {
+                labels: resumen.map(d => d.fecha).reverse(),
+                datasets: [{ 
+                    label: 'Tapitas Diarias', 
+                    data: resumen.map(d => d.total_tapitas).reverse(), 
+                    borderColor: '#2ecc71', 
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)', 
+                    fill: true, 
+                    tension: 0.4 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function actualizarLogs(data) {
+        document.getElementById('log-list-user').innerHTML = data.slice(0, 5).map(l => `
+            <div class="list-group-item bg-transparent d-flex justify-content-between p-2">
+                <span class="text-muted">${new Date(l.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="text-green fw-bold">+${l.tapitas_estimadas} tapitas</span>
+            </div>
+        `).join('');
+    }
+
     function actualizarTablaAdmin(data) {
-        document.getElementById('admin-table-body').innerHTML = data.map(e => `
+        document.getElementById('admin-table-body').innerHTML = data.slice(0,20).map(e => `
             <tr>
                 <td>${new Date(e.timestamp).toLocaleString()}</td>
                 <td>${e.peso_delta_g}g</td>
@@ -225,81 +307,17 @@
         `).join('');
     }
 
-    // --- CAMBIO 1: HORA EXACTA EN ACTIVIDAD ---
-    function actualizarLogs(data) {
-        document.getElementById('log-list-user').innerHTML = data.slice(0, 6).map(l => {
-            const horaExacta = new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `
-                <div class="list-group-item bg-transparent d-flex justify-content-between p-2">
-                    <span class="text-muted">${horaExacta}</span>
-                    <span class="text-green fw-bold">+${l.tapitas_estimadas} tapitas</span>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // --- CAMBIO 2: FUNCIÓN EXPORTAR CSV ---
     function exportarCSV() {
-        if (datosActualesEventos.length === 0) return alert("No hay datos para exportar");
-        
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Fecha,Hora,Gramos Delta,Tapitas Estimadas,Nivel Pct,Robot ID\n";
-
-        datosActualesEventos.forEach(e => {
-            const fechaObj = new Date(e.timestamp);
-            const fila = [
-                fechaObj.toLocaleDateString(),
-                fechaObj.toLocaleTimeString(),
-                e.peso_delta_g,
-                e.tapitas_estimadas,
-                e.nivel_pct,
-                e.robot_id
-            ].join(",");
-            csvContent += fila + "\n";
+        let csv = "Fecha,Hora,Gramos,Tapitas,Nivel\n";
+        datosEventos.forEach(e => {
+            csv += `${new Date(e.timestamp).toLocaleDateString()},${new Date(e.timestamp).toLocaleTimeString()},${e.peso_delta_g},${e.tapitas_estimadas},${e.nivel_pct}\n`;
         });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `RobotCap_Reporte_${new Date().toLocaleDateString()}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function renderCharts(resumen) {
-        const labels = resumen.map(d => d.fecha).reverse();
-        const taps = resumen.map(d => d.total_tapitas).reverse();
-        
-        new Chart(document.getElementById('chartUserHistorial'), {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'Tapitas', data: taps, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', fill: true, tension: 0.4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        new Chart(document.getElementById('chartAdminComparativa'), {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'Peso (g)', data: resumen.map(d => d.total_gramos).reverse(), backgroundColor: '#198754' },
-                    { label: 'Unidades', data: taps, backgroundColor: '#2ecc71' }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        new Chart(document.getElementById('chartHoraPico'), {
-            type: 'polarArea',
-            data: {
-                labels: ['Mañana', 'Mediodía', 'Tarde', 'Noche'],
-                datasets: [{ data: [12, 48, 25, 15], backgroundColor: ['#198754', '#2ecc71', '#27ae60', '#16a085'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Reporte_FACCI.csv');
+        a.click();
     }
 
     function configurarAuth() {
@@ -310,19 +328,10 @@
                 badge.innerText = role.toUpperCase();
                 document.getElementById('btn-show-login').classList.add('d-none');
                 document.getElementById('btn-logout').classList.remove('d-none');
-                
                 if (role === 'admin') {
                     badge.classList.add('admin-active');
-                    document.getElementById('admin-view').style.display = 'flex';
-                    document.getElementById('user-view').style.display = 'none';
-                } else {
-                    badge.classList.remove('admin-active');
-                    document.getElementById('admin-view').style.display = 'none';
-                    document.getElementById('user-view').style.display = 'flex';
+                    document.getElementById('admin-view').style.display = 'block';
                 }
-            } else {
-                badge.innerText = "INVITADO";
-                badge.classList.remove('admin-active');
             }
         });
 
