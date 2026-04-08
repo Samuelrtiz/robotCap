@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RobotCap | Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --bg-light: #f4f7f6;
+        }
+        body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { border-bottom: 3px solid #198754; }
+        .card { border: none; border-radius: 12px; }
+        .card-stat { border-left: 6px solid var(--primary-color); }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+        .progress { height: 12px; border-radius: 10px; }
+        #log-eventos { max-height: 400px; overflow-y: auto; }
+        .badge-weight { background-color: #e9ecef; color: #495057; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <span class="me-2">♻️</span> Eco-Robot Dashboard <small class="text-muted ms-2" style="font-size: 0.7em;">v1.0 UNPHU-01</small>
+        </span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3">
+                <div class="text-muted small text-uppercase">Total Tapitas</div>
+                <div class="stat-value" id="stat-total-tapitas">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3" style="border-left-color: #198754;">
+                <div class="text-muted small text-uppercase">Peso Acumulado</div>
+                <div class="stat-value"><span id="stat-total-peso">0.0</span> <small class="h6 text-muted">g</small></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 bg-white">
+                <div class="text-muted small text-uppercase mb-2">Nivel de Contenedor</div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold" id="stat-nivel">0%</span>
+                </div>
+                <div class="progress">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3" style="border-left-color: #ffc107;">
+                <div class="text-muted small text-uppercase">Estado Sistema</div>
+                <div class="stat-value text-success" style="font-size: 1.4rem;" id="stat-status">En Línea</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Rendimiento Últimos 7 Días</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;"><canvas id="graficaDiaria"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Actividad en Vivo</h6>
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                </div>
+                <ul class="list-group list-group-flush" id="log-eventos">
+                    <li class="list-group-item text-center py-4 text-muted">Conectando con el robot...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CREDENCIALES CONFIGURADAS
+    const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let chart;
+
+    async function init() {
+        await cargarResumen();
+        await cargarLogReciente();
+        configurarRealtime();
+    }
+
+    async function cargarResumen() {
+        const { data, error } = await _supabase
+            .from('resumen_diario')
+            .select('*')
+            .order('fecha', { ascending: false })
+            .limit(7);
+
+        if (error) return console.error(error);
+
+        if (data && data.length > 0) {
+            const labels = data.map(d => d.fecha).reverse();
+            const valores = data.map(d => d.total_tapitas).reverse();
+            actualizarGrafica(labels, valores);
+
+            const totalTapitas = data.reduce((acc, curr) => acc + curr.total_tapitas, 0);
+            const totalPeso = data.reduce((acc, curr) => acc + curr.total_gramos, 0);
+            document.getElementById('stat-total-tapitas').innerText = totalTapitas.toLocaleString();
+            document.getElementById('stat-total-peso').innerText = totalPeso.toFixed(1);
+        }
+    }
+
+    async function cargarLogReciente() {
+        const { data, error } = await _supabase
+            .from('eventos_insercion')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(8);
+
+        if (error) return;
+
+        const logContainer = document.getElementById('log-eventos');
+        if (data && data.length > 0) {
+            logContainer.innerHTML = data.map(ev => `
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom">
+                    <div>
+                        <div class="fw-bold text-dark">+${ev.tapitas_estimadas} tapitas</div>
+                        <small class="text-muted">${new Date(ev.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <span class="badge badge-weight rounded-pill">${ev.peso_delta_g}g</span>
+                </li>
+            `).join('');
+
+            const ultimo = data[0];
+            document.getElementById('stat-nivel').innerText = `${ultimo.nivel_pct}%`;
+            const pb = document.getElementById('progress-bar');
+            pb.style.width = `${ultimo.nivel_pct}%`;
+            
+            // Colores dinámicos
+            if(ultimo.nivel_pct > 85) pb.className = "progress-bar bg-danger";
+            else if(ultimo.nivel_pct > 60) pb.className = "progress-bar bg-warning";
+            else pb.className = "progress-bar bg-success";
+        }
+    }
+
+    function configurarRealtime() {
+        _supabase
+            .channel('db-changes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, () => {
+                cargarResumen();
+                cargarLogReciente();
+            })
+            .subscribe();
+    }
+
+    function actualizarGrafica(labels, valores) {
+        const ctx = document.getElementById('graficaDiaria').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line', // Cambiado a línea para mejor visualización de tendencia
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tapitas',
+                    data: valores,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
