@@ -1,200 +1,181 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es" data-bs-theme="dark"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap | Dashboard</title>
+    <title>RobotCap | Sistema de Reciclaje Inteligente</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
-            --primary-color: #0d6efd;
-            --bg-light: #f4f7f6;
+            --robot-green: #198754;
+            --robot-light-green: #2ecc71;
         }
-        body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar { border-bottom: 3px solid #198754; }
-        .card { border: none; border-radius: 12px; }
-        .card-stat { border-left: 6px solid var(--primary-color); }
-        .stat-value { font-size: 1.8rem; font-weight: bold; }
-        .progress { height: 12px; border-radius: 10px; }
-        #log-eventos { max-height: 400px; overflow-y: auto; }
-        .badge-weight { background-color: #e9ecef; color: #495057; font-weight: 600; }
+        body { background-color: #0b0f13; color: #e9ecef; }
+        .navbar { border-bottom: 2px solid var(--robot-green); background-color: #1a1d20 !important; }
+        .btn-green { background-color: var(--robot-green); color: white; border: none; }
+        .btn-green:hover { background-color: var(--robot-light-green); }
+        .card { background-color: #1a1d20; border: 1px solid #2d3238; border-radius: 15px; }
+        .card-stat { border-top: 4px solid var(--robot-green); }
+        .text-green { color: var(--robot-light-green) !important; }
+        .chart-container { position: relative; height: 250px; }
+        
+        /* Estilo para ocultar cosas de Admin si no está logueado */
+        .admin-only { display: none; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">
-            <span class="me-2">♻️</span> Eco-Robot Dashboard <small class="text-muted ms-2" style="font-size: 0.7em;">v1.0 UNPHU-01</small>
-        </span>
+        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        <div class="d-flex align-items-center">
+            <span id="user-role" class="badge bg-secondary me-2">Invitado</span>
+            <button class="btn btn-outline-success btn-sm" id="btn-login">Acceder</button>
+            <button class="btn btn-outline-danger btn-sm d-none" id="btn-logout">Salir</button>
+        </div>
     </div>
 </nav>
 
-<div class="container">
+<div class="container mt-4">
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card card-stat shadow-sm p-3">
-                <div class="text-muted small text-uppercase">Total Tapitas</div>
-                <div class="stat-value" id="stat-total-tapitas">0</div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3 text-center">
+                <div class="text-muted small">TAPITAS TOTALES</div>
+                <div class="display-6 fw-bold text-green" id="stat-total-tapitas">0</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card card-stat shadow-sm p-3" style="border-left-color: #198754;">
-                <div class="text-muted small text-uppercase">Peso Acumulado</div>
-                <div class="stat-value"><span id="stat-total-peso">0.0</span> <small class="h6 text-muted">g</small></div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3 text-center">
+                <div class="text-muted small">PESO RECOLECTADO</div>
+                <div class="display-6 fw-bold" id="stat-total-peso">0.0g</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm p-3 bg-white">
-                <div class="text-muted small text-uppercase mb-2">Nivel de Contenedor</div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-bold" id="stat-nivel">0%</span>
+        <div class="col-md-4">
+            <div class="card card-stat p-3">
+                <div class="text-muted small text-center mb-2">NIVEL DE LLENADO</div>
+                <div class="progress" style="height: 25px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%">0%</div>
                 </div>
-                <div class="progress">
-                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-stat shadow-sm p-3" style="border-left-color: #ffc107;">
-                <div class="text-muted small text-uppercase">Estado Sistema</div>
-                <div class="stat-value text-success" style="font-size: 1.4rem;" id="stat-status">En Línea</div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Rendimiento Últimos 7 Días</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height: 300px;"><canvas id="graficaDiaria"></canvas></div>
-                </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Recolección Diaria (Tapitas)</h6>
+                <div class="chart-container"><canvas id="chartLineal"></canvas></div>
             </div>
         </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Actividad en Vivo</h6>
-                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+        <div class="col-md-4">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Capacidad del Robot</h6>
+                <div class="chart-container"><canvas id="chartDona"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h6 class="text-muted mb-3">Comparativa de Pesos (g)</h6>
+                <div class="chart-container"><canvas id="chartBarras"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h6 class="text-muted mb-3 text-center">Panel de Control (Admin)</h6>
+                <div class="d-flex justify-content-around align-items-center h-100 py-4">
+                    <button class="btn btn-danger admin-only" id="btn-vaciar">Vaciar Contenedor</button>
+                    <p class="text-muted" id="admin-msg">Inicie sesión como administrador para ver controles.</p>
                 </div>
-                <ul class="list-group list-group-flush" id="log-eventos">
-                    <li class="list-group-item text-center py-4 text-muted">Conectando con el robot...</li>
-                </ul>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // CREDENCIALES CONFIGURADAS
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let chart;
+    // Objetos de las gráficas
+    let chartLine, chartDoughnut, chartBar;
 
     async function init() {
-        await cargarResumen();
-        await cargarLogReciente();
+        await cargarDatos();
+        configurarAuth();
         configurarRealtime();
     }
 
-    async function cargarResumen() {
-        const { data, error } = await _supabase
-            .from('resumen_diario')
-            .select('*')
-            .order('fecha', { ascending: false })
-            .limit(7);
-
-        if (error) return console.error(error);
-
-        if (data && data.length > 0) {
-            const labels = data.map(d => d.fecha).reverse();
-            const valores = data.map(d => d.total_tapitas).reverse();
-            actualizarGrafica(labels, valores);
-
-            const totalTapitas = data.reduce((acc, curr) => acc + curr.total_tapitas, 0);
-            const totalPeso = data.reduce((acc, curr) => acc + curr.total_gramos, 0);
-            document.getElementById('stat-total-tapitas').innerText = totalTapitas.toLocaleString();
-            document.getElementById('stat-total-peso').innerText = totalPeso.toFixed(1);
-        }
-    }
-
-    async function cargarLogReciente() {
-        const { data, error } = await _supabase
-            .from('eventos_insercion')
-            .select('*')
-            .order('timestamp', { ascending: false })
-            .limit(8);
-
+    async function cargarDatos() {
+        const { data, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
         if (error) return;
 
-        const logContainer = document.getElementById('log-eventos');
-        if (data && data.length > 0) {
-            logContainer.innerHTML = data.map(ev => `
-                <li class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom">
-                    <div>
-                        <div class="fw-bold text-dark">+${ev.tapitas_estimadas} tapitas</div>
-                        <small class="text-muted">${new Date(ev.timestamp).toLocaleTimeString()}</small>
-                    </div>
-                    <span class="badge badge-weight rounded-pill">${ev.peso_delta_g}g</span>
-                </li>
-            `).join('');
+        const fechas = data.map(d => d.fecha).reverse();
+        const tapitas = data.map(d => d.total_tapitas).reverse();
+        const pesos = data.map(d => d.total_gramos).reverse();
 
-            const ultimo = data[0];
-            document.getElementById('stat-nivel').innerText = `${ultimo.nivel_pct}%`;
-            const pb = document.getElementById('progress-bar');
-            pb.style.width = `${ultimo.nivel_pct}%`;
-            
-            // Colores dinámicos
-            if(ultimo.nivel_pct > 85) pb.className = "progress-bar bg-danger";
-            else if(ultimo.nivel_pct > 60) pb.className = "progress-bar bg-warning";
-            else pb.className = "progress-bar bg-success";
-        }
+        actualizarGraficas(fechas, tapitas, pesos);
+        
+        // Totales en tarjetas
+        document.getElementById('stat-total-tapitas').innerText = tapitas.reduce((a,b) => a+b, 0);
+        document.getElementById('stat-total-peso').innerText = pesos.reduce((a,b) => a+b, 0).toFixed(1) + "g";
+    }
+
+    function actualizarGraficas(fechas, tapitas, pesos) {
+        const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+
+        // 1. Gráfica Lineal (Tendencia)
+        if (chartLine) chartLine.destroy();
+        chartLine = new Chart(document.getElementById('chartLineal'), {
+            type: 'line',
+            data: { labels: fechas, datasets: [{ data: tapitas, borderColor: '#2ecc71', tension: 0.3, fill: true, backgroundColor: 'rgba(25, 135, 84, 0.1)' }] },
+            options: commonOptions
+        });
+
+        // 2. Gráfica de Barras (Peso)
+        if (chartBar) chartBar.destroy();
+        chartBar = new Chart(document.getElementById('chartBarras'), {
+            type: 'bar',
+            data: { labels: fechas, datasets: [{ data: pesos, backgroundColor: '#198754' }] },
+            options: commonOptions
+        });
+
+        // 3. Gráfica de Dona (Capacidad - Simulada con último nivel)
+        const ultimoNivel = 65; // Ejemplo: Deberías traer el nivel real
+        if (chartDoughnut) chartDoughnut.destroy();
+        chartDoughnut = new Chart(document.getElementById('chartDona'), {
+            type: 'doughnut',
+            data: { 
+                labels: ['Lleno', 'Libre'], 
+                datasets: [{ data: [ultimoNivel, 100-ultimoNivel], backgroundColor: ['#198754', '#2d3238'], borderWidth: 0 }] 
+            },
+            options: { cutout: '80%', ...commonOptions }
+        });
+    }
+
+    // Lógica Simple de Roles (Simulada para demostración inicial)
+    function configurarAuth() {
+        document.getElementById('btn-login').onclick = () => {
+            const pass = prompt("Ingrese clave de Admin:");
+            if(pass === "robot123") { // Lógica simple para tu prototipo
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                document.getElementById('admin-msg').style.display = 'none';
+                document.getElementById('user-role').innerText = "Administrador";
+                document.getElementById('user-role').className = "badge bg-success me-2";
+                document.getElementById('btn-login').classList.add('d-none');
+                document.getElementById('btn-logout').classList.remove('d-none');
+            }
+        };
+
+        document.getElementById('btn-logout').onclick = () => location.reload();
     }
 
     function configurarRealtime() {
-        _supabase
-            .channel('db-changes')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, () => {
-                cargarResumen();
-                cargarLogReciente();
-            })
-            .subscribe();
-    }
-
-    function actualizarGrafica(labels, valores) {
-        const ctx = document.getElementById('graficaDiaria').getContext('2d');
-        if (chart) chart.destroy();
-        chart = new Chart(ctx, {
-            type: 'line', // Cambiado a línea para mejor visualización de tendencia
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Tapitas',
-                    data: valores,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
-            }
-        });
+        _supabase.channel('custom-insert-channel').on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, 
+        () => cargarDatos()).subscribe();
     }
 
     document.addEventListener('DOMContentLoaded', init);
