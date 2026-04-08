@@ -247,7 +247,6 @@
         doc.save("Reporte_FACCI.pdf");
     }
 
-    // CAMBIO: Nueva función para exportar a CSV
     function exportarCSV() {
         if (datosEventos.length === 0) {
             alert("No hay datos disponibles para exportar.");
@@ -256,7 +255,6 @@
 
         const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
         
-        // Mapeamos los datos para el formato CSV
         const filas = datosEventos.map(e => [
             `"${new Date(e.timestamp).toLocaleString()}"`, 
             `"${e.peso_delta_g}g"`,
@@ -265,8 +263,7 @@
             e.robot_id
         ]);
 
-        // Unimos todo en un string gigante
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" // \uFEFF es para que Excel detecte bien los acentos (UTF-8)
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
             + encabezados.join(",") + "\n" 
             + filas.map(f => f.join(",")).join("\n");
 
@@ -309,13 +306,23 @@
         
         for(let i=0; i<28; i++) {
             const tapitasRandom = Math.floor(Math.random() * 50);
+            
+            // Simulación de hora aleatoria
+            const hora = Math.floor(Math.random() * 24).toString().padStart(2, '0');
+            const min = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+            const horaSimulada = `${hora}:${min}`;
+
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
             d.style.opacity = (tapitasRandom / 50) + 0.1;
             d.style.backgroundColor = 'var(--robot-accent)';
+            
+            // Configuración avanzada de tooltip
             d.setAttribute('data-bs-toggle', 'tooltip');
             d.setAttribute('data-bs-placement', 'top');
-            d.setAttribute('title', `Tapitas: ${tapitasRandom}`);
+            d.setAttribute('data-bs-html', 'true'); // Permite el uso de HTML (negritas y br)
+            d.setAttribute('title', `<b>Hora:</b> ${horaSimulada}<br><b>Tapitas:</b> ${tapitasRandom}`);
+            
             container.appendChild(d);
         }
 
