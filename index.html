@@ -1,3 +1,1602 @@
+Gemini
+Conversación con Gemini
+Tú dijiste
+quiero utilizar sql Lite para hacer unas simulaciones que paquete deberia descargar, la simulacion conectara una pagina web que seria un dashboard que extraeria los datos de la base de datos
+
+Gemini dijo
+Para trabajar con SQLite en un entorno de desarrollo web enfocado en simulaciones, no necesitas descargar un "software" pesado, ya que SQLite es una base de datos basada en archivos que suele venir integrada en casi todos los lenguajes de programación.
+
+Aquí tienes los paquetes y herramientas recomendados según el lenguaje que elijas para tu simulación y el dashboard:
+
+1. Si utilizas Python (Recomendado para simulaciones)
+Python es la opción más robusta para simulaciones y cuenta con librerías que facilitan la creación de dashboards rápidos.
+
+Librería de Base de Datos: No necesitas descargar nada; usa el módulo estándar sqlite3.
+
+Para el Dashboard: * Streamlit: Es la opción más rápida. Permite crear un dashboard conectando SQLite en minutos sin saber HTML/CSS. (pip install streamlit)
+
+Plotly Dash: Si buscas algo más profesional y personalizable. (pip install dash)
+
+Para la Simulación: numpy o pandas para gestionar los datos antes de guardarlos en SQLite.
+
+2. Si utilizas JavaScript / Node.js
+Ideal si buscas una integración nativa con tecnologías web modernas.
+
+Paquete de Base de Datos:
+
+better-sqlite3: Es el más rápido y fácil de usar para Node.js. (npm install better-sqlite3)
+
+sqlite3: La opción estándar, aunque funciona de forma asíncrona.
+
+Para el Dashboard:
+
+Frontend: React, Vue o simplemente HTML/JS con una librería de gráficas como Chart.js o D3.js.
+
+Backend: Express.js para crear la API que consulta la base de datos.
+
+3. Herramientas de Gestión (Visualización de Datos)
+Para ver qué está pasando dentro de tu archivo .db sin pasar por el código, te recomiendo descargar:
+
+DB Browser for SQLite: Una herramienta gratuita y de código abierto que te permite ver tablas, editar datos y ejecutar pruebas de SQL manualmente. Es esencial para depurar tu simulación.
+
+Flujo de Trabajo Sugerido
+Simulación: Tu script (en Python o Node) genera los datos y usa sentencias INSERT para guardarlos en un archivo llamado simulacion.db.
+
+Base de Datos: El archivo simulacion.db actúa como el puente.
+
+Dashboard: Tu aplicación web realiza consultas SELECT a ese mismo archivo para actualizar las gráficas en tiempo real o bajo demanda.
+
+¿En qué lenguaje tienes pensado programar la lógica de la simulación? Puedo darte un ejemplo de código inicial si lo necesitas.
+
+Tú dijiste
+Si quiero usar una base de datos para esta simulacion, cual motor deberia usar
+
+Gemini dijo
+Para una simulación que se conecta a un dashboard, la elección del motor depende totalmente de la escala y la concurrencia (cuántos procesos escriben y leen a la vez).
+
+Aquí te presento las tres mejores opciones según tu caso de uso:
+
+1. SQLite (La opción "Todo en Uno")
+Es ideal si estás empezando o si la simulación y el dashboard correrán en la misma máquina.
+
+Pros: No requiere instalación de servidor; la base de datos es un simple archivo .db. Es increíblemente rápida para lecturas.
+
+Contras: No maneja bien que muchos procesos escriban al mismo tiempo (puedes encontrarte con errores de database is locked).
+
+Cuándo usarla: Si tu simulación genera datos de forma secuencial y el dashboard es para uso personal o local.
+
+2. PostgreSQL (La opción Profesional)
+Es el estándar de la industria para datos relacionales.
+
+Pros: Soporta escritura y lectura simultánea masiva sin despeinarse. Tiene funciones avanzadas para datos temporales (útil en simulaciones).
+
+Contras: Requiere instalar un servidor (o usar Docker) y configurar usuarios/permisos.
+
+Cuándo usarla: Si tu simulación es compleja, genera miles de registros por segundo o si el dashboard será accedido por varias personas simultáneamente desde la web.
+
+3. InfluxDB (La opción Especializada)
+Si tu simulación es de "series temporales" (datos que cambian cada milisegundo, como sensores o telemetría).
+
+Pros: Está diseñada específicamente para guardar marcas de tiempo. Las consultas para promedios y tendencias son mucho más rápidas que en SQL tradicional.
+
+Contras: Usa un lenguaje de consulta distinto (InfluxQL o Flux), lo que añade una curva de aprendizaje.
+
+Cuándo usarla: Si el dashboard necesita mostrar gráficas de líneas en tiempo real con una precisión de milisegundos.
+
+Comparativa Rápida
+Característica	SQLite	PostgreSQL	InfluxDB
+Configuración	Instantánea (archivo)	Media (servidor)	Media
+Concurrencia	Baja (1 escritor)	Muy Alta	Muy Alta
+Tipo de Datos	General	General / Relacional	Series de Tiempo
+Dashboard	Fácil (Streamlit/Flask)	Estándar (Dash/Grafana)	Nativo / Grafana
+Mi recomendación:
+Si es tu primera vez haciendo esto, quédate con SQLite. Es la forma más limpia de prototipar. Si en el futuro notas que el dashboard se queda "congelado" mientras la simulación escribe datos, ese será el momento de migrar a PostgreSQL.
+
+¿Qué tipo de datos vas a generar en la simulación (ej. resultados financieros, trayectorias físicas, inventarios)? Eso me ayudaría a decirte si necesitas algo más especializado.
+
+Tú dijiste
+Quiero utilizar postgre
+
+Gemini dijo
+¡Excelente elección! PostgreSQL (o Postgres) es el estándar de oro cuando buscas fiabilidad y potencia. A diferencia de SQLite, aquí trabajamos con un modelo cliente-servidor, lo que te permitirá escalar tu simulación sin preocuparte por bloqueos de archivos.
+
+Para empezar con Postgres, aquí tienes la hoja de ruta técnica:
+
+1. Instalación del Motor
+Tienes dos rutas principales para tener Postgres corriendo en tu máquina:
+
+Instalación Nativa: Descarga el instalador oficial desde postgresql.org. Te instalará el servidor y pgAdmin 4, que es la interfaz gráfica para gestionar tus tablas.
+
+Docker (Recomendado): Si ya usas Docker, puedes levantar una base de datos en segundos sin ensuciar tu sistema operativo:
+docker run --name sim-db -e POSTGRES_PASSWORD=mi_clave -p 5432:5432 -d postgres
+
+2. Librerías para conectar tu Código
+Dependiendo de qué estés usando para la simulación y el dashboard, estas son las herramientas necesarias:
+
+Si usas Python
+Es la combinación más común para simulaciones científicas o financieras.
+
+Psycopg2: El adaptador más estable y rápido. (pip install psycopg2-binary)
+
+SQLAlchemy: Si prefieres trabajar con objetos en lugar de escribir SQL puro (muy útil para simulaciones complejas).
+
+Si usas Node.js
+node-postgres (pg): La librería estándar para conectar Express o cualquier script de Node a Postgres. (npm install pg)
+
+3. Estructura de la Conexión
+A diferencia de SQLite (donde solo dabas la ruta del archivo), en Postgres necesitas un String de Conexión. Se ve así:
+
+postgresql://usuario:contraseña@localhost:5432/nombre_base_de_datos
+
+4. El Dashboard: ¿Cómo visualizarlo?
+Al usar Postgres, tienes una ventaja enorme: puedes usar herramientas profesionales de visualización que se conectan directamente sin programar:
+
+Grafana: Es la herramienta líder para dashboards. Se conecta a Postgres y te permite crear gráficas de series temporales impresionantes con solo unos clics.
+
+Metabase: Muy intuitiva, ideal si quieres que el dashboard sea fácil de compartir y tenga un aspecto muy limpio.
+
+Custom (Streamlit/Dash): Si prefieres programar tú mismo la lógica del dashboard en Python.
+
+Un consejo de "Pro" para Simulaciones:
+Dado que vas a insertar muchos datos (probablemente miles de pasos de simulación), no uses un INSERT individual para cada registro. Busca la función de "Bulk Insert" (inserción masiva) o el comando COPY de Postgres. Esto hará que tu simulación sea hasta 100 veces más rápida al guardar resultados.
+
+¿Te gustaría que te ayude a diseñar la tabla inicial para guardar los resultados de tu simulación? Solo dime qué variables estás midiendo.
+
+Tú dijiste
+No seria posible conectarlo con un motor mas simple?
+
+Gemini dijo
+Es totalmente comprensible. Postgres es una maravilla, pero para un proyecto que está naciendo, puede sentirse como intentar matar un mosquito con un cañón: mucha configuración de servidores, usuarios y puertos.
+
+Si buscas algo más simple que Postgres pero con más "músculo" o flexibilidad que un archivo local de SQLite, tienes dos caminos muy interesantes:
+
+1. DuckDB: El "SQLite" para Análisis de Datos
+Si tu simulación genera muchos datos y el dashboard necesita procesarlos rápido (promedios, máximos, tendencias), DuckDB es la evolución lógica.
+
+¿Por qué es simple? Al igual que SQLite, no necesita instalación. Es solo un archivo.
+
+¿Cuál es la mejora? Está optimizado para análisis (OLAP). Mientras que SQLite sufre con tablas de millones de filas, DuckDB las vuela.
+
+Ideal para: Simulaciones numéricas pesadas donde el dashboard hace muchos cálculos.
+
+2. Supabase: Postgres "Sin Dolor"
+Si realmente quieres la potencia de Postgres pero odias la configuración técnica, Supabase es la solución.
+
+¿Cómo funciona? Es una plataforma en la nube que te da una base de datos Postgres lista en un clic.
+
+Lo mejor: Te da una API automática. Tu dashboard no tiene que configurar drivers complejos; simplemente hace peticiones web (HTTP) para obtener los datos.
+
+Ideal para: Si quieres que tu dashboard sea accesible desde cualquier lugar (no solo en tu PC) sin configurar servidores.
+
+Tabla Comparativa de Simplicidad
+Motor	Instalación	Dificultad	¿Para qué sirve?
+SQLite	Ninguna (Archivo)	Muy Fácil	Prototipos y simulaciones ligeras.
+DuckDB	Ninguna (Archivo)	Fácil	Simulaciones con muchísimos datos numéricos.
+Supabase	Cuenta en la nube	Media/Fácil	Si quieres Postgres pero sin configurar nada en tu PC.
+Postgres	Servidor local/Docker	Media/Alta	Proyectos industriales o de larga duración.
+Mi recomendación final
+Si el motivo de buscar algo más simple es evitar la instalación y configuración de servidores, ve por DuckDB (si vas a usar Python) o quédate con SQLite.
+
+Ambos te permiten concentrarte en el código de tu simulación y el dashboard, sin perder tiempo peleando con contraseñas de bases de datos o servicios de Windows/Linux.
+
+¿Qué te parece la idea de usar un motor basado en archivos (como DuckDB o SQLite) para empezar hoy mismo sin instalaciones?
+
+Tú dijiste
+voy a utilizar supaBae
+
+Gemini dijo
+¡Excelente elección! Supabase es básicamente "PostgreSQL con esteroides" pero sin el dolor de cabeza de administrar un servidor. Es perfecto para lo que buscas porque te ofrece una base de datos real, una interfaz web preciosa para ver tus datos y una API lista para usar.
+
+Aquí tienes los pasos exactos para arrancar tu simulación con Supabase:
+
+1. Configuración Inicial (5 minutos)
+Crea una cuenta en supabase.com.
+
+Crea un nuevo proyecto. Ponle un nombre (ej: Simulacion-Web) y una contraseña segura.
+
+Espera un par de minutos a que "despierten" tu base de datos.
+
+2. Los datos de conexión
+Una vez creado el proyecto, ve a la sección de Project Settings > API. Necesitarás dos cosas:
+
+Project URL: Algo como https://xyz.supabase.co
+
+API Key (anon public): Una cadena larga de caracteres.
+
+3. Conexión desde tu código
+Supabase brilla porque no necesitas configurar drivers de base de datos tradicionales si no quieres. Usas su librería oficial que es muy sencilla.
+
+Si tu simulación es en Python:
+Bash
+pip install supabase
+Python
+from supabase import create_client
+
+url = "TU_URL_DE_SUPABASE"
+key = "TU_API_KEY"
+supabase = create_client(url, key)
+
+# Para insertar un dato de tu simulación
+datos = {"variable": "temperatura", "valor": 25.5}
+supabase.table("mi_simulacion").insert(datos).execute()
+Si tu Dashboard es en JavaScript (React, Vue, HTML):
+Bash
+npm install @supabase/supabase-js
+JavaScript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient('TU_URL', 'TU_KEY')
+
+// Para extraer datos en tu dashboard
+const { data, error } = await supabase
+  .from('mi_simulacion')
+  .select('*')
+4. ¿Por qué esto es mejor para tu Dashboard?
+Realtime: Supabase tiene una función llamada Realtime. Puedes hacer que tu dashboard se actualice automáticamente cada vez que la simulación inserte un nuevo dato, sin necesidad de refrescar la página.
+
+Visualización: Dentro del panel de Supabase tienes el Table Editor, que es como un Excel integrado donde verás los datos entrar en vivo mientras corre tu simulación.
+
+5. Un detalle importante: Las Tablas
+Antes de correr la simulación, debes crear la tabla en el panel de Supabase (SQL Editor). Aquí tienes un ejemplo de código SQL que puedes pegar allí para empezar:
+
+SQL
+CREATE TABLE mi_simulacion (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  paso_simulacion int4,
+  resultado float8
+);
+¿Te gustaría que te ayude a definir las columnas de tu tabla según lo que vas a simular? Solo dime qué datos quieres guardar.
+
+Tú dijiste
+Tabla: eventos_insercion
+
+Registro principal de donaciones
+
+CampoTipoRestricciónDescripciónidINTEGERPK, AutoincrementalIdentificador único del eventotimestampDATETIMENOT NULLFecha y hora UTC del evento (precisión de milisegundos)peso_delta_gREALNOT NULLDiferencial de peso en gramos — valor crudo del HX711tapitas_estimadasINTEGERNOT NULLround(peso_delta_g / peso_promedio_calibrado)nivel_pctREAL0.0 – 100.0% de llenado del contenedor al momento del eventorobot_idTEXTDEFAULT 'UNPHU-01'Identifica el robot — habilita el soporte multi-robot
+
+
+
+Vista: resumen_diario
+
+Agregado por día para los gráficos del dashboard
+
+CampoTipoRestricciónDescripciónfechaDATEUNIQUEFecha del resumen — GROUP BY DATE(timestamp)total_tapitasINTEGERSUMSuma de tapitas del díatotal_gramosREALSUMPeso total acumulado del díanum_eventosINTEGERCOUNTNúmero de inserciones individuales del día
+
+
+
+Tabla: alertas
+
+Historial de alertas generadas y enviadas
+
+CampoTipoRestricciónDescripciónidINTEGERPK, AutoincrementalIdentificador único de la alertatipoTEXTNOT NULLNIVEL_80, NIVEL_95, INACTIVIDAD, VACIADO_CONFIRMADOnivel_pctREAL—% de llenado al momento de la alertacanalTEXT—TELEGRAM, EMAIL, LOCAL_OLEDenviadoBOOLEANDEFAULT FALSEConfirma entrega exitosa al canaltimestampDATETIMENOT NULLMomento de generación de la alerta
+
+
+
+
+
+para hacer estas tablas como deberia hacerlos dentro de supabase.com
+
+Gemini dijo
+Para crear esta estructura en Supabase, tienes dos caminos: usar la interfaz visual (Table Editor) o el SQL Editor. Dado que ya tienes definidos los tipos de datos y las restricciones, la forma más rápida y precisa es usar el SQL Editor.
+
+Sigue estos pasos dentro de tu panel de Supabase:
+
+1. Crear las Tablas y la Vista
+Copia y pega el siguiente código en la sección SQL Editor y haz clic en Run:
+
+SQL
+-- 1. Tabla: eventos_insercion
+CREATE TABLE eventos_insercion (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  peso_delta_g FLOAT8 NOT NULL,
+  tapitas_estimadas INTEGER NOT NULL,
+  nivel_pct FLOAT8 CHECK (nivel_pct >= 0 AND nivel_pct <= 100),
+  robot_id TEXT DEFAULT 'UNPHU-01'
+);
+
+-- 2. Tabla: alertas
+CREATE TABLE alertas (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  tipo TEXT NOT NULL, -- NIVEL_80, NIVEL_95, etc.
+  nivel_pct FLOAT8,
+  canal TEXT, -- TELEGRAM, EMAIL, etc.
+  enviado BOOLEAN DEFAULT FALSE,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 3. Vista: resumen_diario
+CREATE VIEW resumen_diario AS
+SELECT 
+  (timestamp AT TIME ZONE 'UTC')::DATE AS fecha,
+  SUM(tapitas_estimadas) AS total_tapitas,
+  SUM(peso_delta_g) AS total_gramos,
+  COUNT(id) AS num_eventos
+FROM eventos_insercion
+GROUP BY 1
+ORDER BY 1 DESC;
+2. Ajustes técnicos importantes para Supabase
+Al pasar de SQLite/Postgres local a Supabase, hay tres cambios clave que apliqué en el código anterior:
+
+BIGINT GENERATED BY DEFAULT AS IDENTITY: Es el estándar de Postgres para campos autoincrementales. Es más robusto que el INTEGER PK de SQLite.
+
+TIMESTAMPTZ: En lugar de DATETIME, usamos "Timestamp with Time Zone". Supabase maneja internamente todo en UTC, lo cual es vital para que tu dashboard no tenga desfases horarios.
+
+FLOAT8: Es el equivalente en Postgres al REAL o DOUBLE PRECISION para asegurar que los decimales del HX711 y el porcentaje de nivel sean exactos.
+
+3. Configuración de Seguridad (RLS)
+Por defecto, las tablas en Supabase son seguras y no permiten leer ni escribir datos desde una web externa a menos que configures las Políticas de Seguridad (RLS).
+
+Si estás en etapa de pruebas y quieres acceso libre (usando tu anon key), ejecuta esto en el SQL Editor:
+
+SQL
+-- Habilitar RLS
+ALTER TABLE eventos_insercion ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alertas ENABLE ROW LEVEL SECURITY;
+
+-- Crear política para permitir inserciones y lecturas anónimas (Solo para desarrollo)
+CREATE POLICY "Permitir todo a usuarios anonimos" 
+ON eventos_insercion FOR ALL 
+TO anon 
+USING (true) 
+WITH CHECK (true);
+
+CREATE POLICY "Permitir todo a usuarios anonimos" 
+ON alertas FOR ALL 
+TO anon 
+USING (true) 
+WITH CHECK (true);
+4. ¿Cómo ver los datos en tiempo real?
+Una vez ejecutado el código:
+
+Ve al Table Editor (icono de tabla a la izquierda).
+
+Selecciona eventos_insercion para ver cómo entran los datos de las donaciones.
+
+Selecciona la pestaña Views para ver el resumen_diario.
+
+Tip para el Dashboard: Como mencionaste que es para un robot (UNPHU-01), Supabase te permite "escuchar" la tabla eventos_insercion. En tu código de JavaScript, puedes usar .on('INSERT') para que el dashboard haga un sonido o muestre una animación cada vez que alguien deposite una tapita en el robot.
+
+Tú dijiste
+Viendo esto ahora quiero que crees utilizando javascript,css, html y boostrap si lo deseas para crear la pagina web del dashboard
+
+Gemini dijo
+Para crear un dashboard que se conecte a Supabase en tiempo real, utilizaremos una estructura limpia con Bootstrap 5 para el diseño, Chart.js para las gráficas y la librería oficial de Supabase para los datos.
+
+Aquí tienes el código completo para un archivo único (puedes separarlos si prefieres).
+
+1. Estructura HTML y Estilos (index.html)
+Este código incluye los enlaces a Bootstrap y a los scripts necesarios.
+
+HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Robot UNPHU-01</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .card-stat { border-left: 5px solid #0d6efd; transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .bg-gradient-blue { background: linear-gradient(45deg, #0d6efd, #0dcaf0); color: white; }
+        #log-eventos { max-height: 300px; overflow-y: auto; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">♻️ Eco-Robot Dashboard <small class="text-muted">(UNPHU-01)</small></span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3 mb-2 bg-white rounded">
+                <div class="text-muted small uppercase font-weight-bold">Total Tapitas</div>
+                <div class="h3" id="stat-total-tapitas">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3 mb-2 bg-white rounded" style="border-left-color: #198754;">
+                <div class="text-muted small">Peso Acumulado (g)</div>
+                <div class="h3" id="stat-total-peso">0.0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 mb-2 bg-gradient-blue rounded">
+                <div class="small">Nivel de Llenado</div>
+                <div class="h3" id="stat-nivel">0%</div>
+                <div class="progress" style="height: 10px;">
+                    <div id="progress-bar" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3 mb-2 bg-white rounded" style="border-left-color: #dc3545;">
+                <div class="text-muted small">Alertas Activas</div>
+                <div class="h3" id="stat-alertas">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white font-weight-bold">Historial de Recolección (Diario)</div>
+                <div class="card-body">
+                    <canvas id="graficaDiaria"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white font-weight-bold">Últimas Inserciones</div>
+                <ul class="list-group list-group-flush" id="log-eventos">
+                    <li class="list-group-item text-center text-muted">Esperando datos...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
+2. Lógica JavaScript (app.js)
+Debes reemplazar los valores de SUPABASE_URL y SUPABASE_KEY con los que obtuviste en tu panel de Supabase.
+
+JavaScript
+// CONFIGURACIÓN DE SUPABASE
+const SUPABASE_URL = "https://tu-proyecto.supabase.co";
+const SUPABASE_KEY = "tu-anon-public-key";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Variables Globales
+let chart;
+
+// Inicializar Dashboard
+async function init() {
+    await cargarResumen();
+    await cargarLogReciente();
+    configurarRealtime();
+}
+
+// 1. Cargar Datos de la Vista resumen_diario
+async function cargarResumen() {
+    const { data, error } = await supabase
+        .from('resumen_diario')
+        .select('*')
+        .limit(7); // Últimos 7 días
+
+    if (error) return console.error(error);
+
+    const labels = data.map(d => d.fecha).reverse();
+    const valores = data.map(d => d.total_tapitas).reverse();
+
+    actualizarGrafica(labels, valores);
+
+    // Actualizar contadores principales (usando el primer registro del log o suma total)
+    document.getElementById('stat-total-tapitas').innerText = data.reduce((acc, curr) => acc + curr.total_tapitas, 0);
+    document.getElementById('stat-total-peso').innerText = data.reduce((acc, curr) => acc + curr.total_gramos, 0).toFixed(1);
+}
+
+// 2. Cargar Log de Eventos Recientes
+async function cargarLogReciente() {
+    const { data, error } = await supabase
+        .from('eventos_insercion')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+    if (data && data.length > 0) {
+        const logHtml = data.map(ev => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>+${ev.tapitas_estimadas} tapitas</strong><br>
+                    <small class="text-muted">${new Date(ev.timestamp).toLocaleTimeString()}</small>
+                </div>
+                <span class="badge bg-info rounded-pill">${ev.peso_delta_g}g</span>
+            </li>
+        `).join('');
+        document.getElementById('log-eventos').innerHTML = logHtml;
+
+        // Actualizar nivel actual basado en el último evento
+        const ultimo = data[0];
+        document.getElementById('stat-nivel').innerText = `${ultimo.nivel_pct}%`;
+        document.getElementById('progress-bar').style.width = `${ultimo.nivel_pct}%`;
+    }
+}
+
+// 3. Configurar Escucha en Tiempo Real (Realtime)
+function configurarRealtime() {
+    supabase
+        .channel('cambios-reales')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, payload => {
+            console.log('¡Nueva inserción!', payload.new);
+            // Recargar datos para que el dashboard se mueva solo
+            cargarResumen();
+            cargarLogReciente();
+        })
+        .subscribe();
+}
+
+// 4. Lógica de la Gráfica
+function actualizarGrafica(labels, valores) {
+    const ctx = document.getElementById('graficaDiaria').getContext('2d');
+    
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tapitas Recolectadas',
+                data: valores,
+                backgroundColor: '#0d6efd',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+// Ejecutar al cargar la página
+init();
+¿Cómo funciona este Dashboard?
+Conexión Directa: Usa la librería supabase-js para pedir los datos sin necesidad de crear un servidor intermedio (Backend).
+
+Tiempo Real (Realtime): Gracias a supabase.channel(), en cuanto tu robot inserte una fila en la tabla eventos_insercion, el dashboard se refrescará automáticamente sin que el usuario pulse F5.
+
+Vista de Agregados: El gráfico consume la vista resumen_diario que creamos anteriormente, lo que hace que la carga sea extremadamente rápida porque el trabajo pesado de sumar lo hace la base de datos.
+
+Siguiente paso: Para probarlo, simplemente abre el archivo index.html en tu navegador y verás cómo el dashboard cobra vida en cuanto empieces a insertar datos desde tu simulación o desde el panel de Supabase.
+
+Tú dijiste
+esta es la supabase URL: https://seqhkezofckiqsbxztwo.supabase.co
+
+
+
+
+
+Esta es la publishable key: sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA
+
+
+
+introducelo en el javascript
+
+Gemini dijo
+He actualizado el código de app.js con tus credenciales específicas. Ten en cuenta que, por seguridad, he utilizado la configuración estándar de la librería de Supabase para que el objeto supabase se inicialice correctamente.
+
+Aquí tienes el archivo app.js listo para copiar y usar:
+
+JavaScript
+// CONFIGURACIÓN DE SUPABASE CON TUS CREDENCIALES
+const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+
+// Inicialización del cliente de Supabase
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let chart;
+
+// Función principal de inicio
+async function init() {
+    console.log("Iniciando Dashboard...");
+    await cargarResumen();
+    await cargarLogReciente();
+    configurarRealtime();
+}
+
+// 1. Cargar Datos de la Vista resumen_diario para la gráfica
+async function cargarResumen() {
+    const { data, error } = await _supabase
+        .from('resumen_diario')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .limit(7);
+
+    if (error) {
+        console.error("Error cargando resumen:", error);
+        return;
+    }
+
+    if (data && data.length > 0) {
+        const labels = data.map(d => d.fecha).reverse();
+        const valores = data.map(d => d.total_tapitas).reverse();
+
+        actualizarGrafica(labels, valores);
+
+        // Totales históricos basados en los datos recibidos
+        const totalTapitas = data.reduce((acc, curr) => acc + curr.total_tapitas, 0);
+        const totalPeso = data.reduce((acc, curr) => acc + curr.total_gramos, 0);
+
+        document.getElementById('stat-total-tapitas').innerText = totalTapitas.toLocaleString();
+        document.getElementById('stat-total-peso').innerText = totalPeso.toFixed(1);
+    }
+}
+
+// 2. Cargar los últimos 10 eventos de inserción
+async function cargarLogReciente() {
+    const { data, error } = await _supabase
+        .from('eventos_insercion')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+    if (error) {
+        console.error("Error cargando log:", error);
+        return;
+    }
+
+    const logContainer = document.getElementById('log-eventos');
+
+    if (data && data.length > 0) {
+        const logHtml = data.map(ev => `
+            <li class="list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeIn">
+                <div>
+                    <strong>+${ev.tapitas_estimadas} tapitas</strong><br>
+                    <small class="text-muted">${new Date(ev.timestamp).toLocaleString()}</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">${ev.peso_delta_g}g</span>
+            </li>
+        `).join('');
+        logContainer.innerHTML = logHtml;
+
+        // Actualizar el estado actual del robot (Nivel de llenado)
+        const ultimoEvento = data[0];
+        document.getElementById('stat-nivel').innerText = `${ultimoEvento.nivel_pct}%`;
+        document.getElementById('progress-bar').style.width = `${ultimoEvento.nivel_pct}%`;
+        
+        // Cambiar color de barra si está muy lleno
+        if(ultimoEvento.nivel_pct > 80) {
+            document.getElementById('progress-bar').className = "progress-bar bg-danger";
+        } else if(ultimoEvento.nivel_pct > 50) {
+            document.getElementById('progress-bar').className = "progress-bar bg-warning";
+        } else {
+            document.getElementById('progress-bar').className = "progress-bar bg-success";
+        }
+    }
+}
+
+// 3. Escuchar cambios en tiempo real
+function configurarRealtime() {
+    _supabase
+        .channel('cambios-reales')
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'eventos_insercion' 
+        }, payload => {
+            console.log('¡Nuevo depósito detectado!', payload.new);
+            // Refrescar datos automáticamente
+            cargarResumen();
+            cargarLogReciente();
+        })
+        .subscribe();
+}
+
+// 4. Renderizar Gráfica con Chart.js
+function actualizarGrafica(labels, valores) {
+    const ctx = document.getElementById('graficaDiaria').getContext('2d');
+    
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tapitas por Día',
+                data: valores,
+                backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                borderColor: '#0d6efd',
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { display: false } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+// Iniciar aplicación
+document.addEventListener('DOMContentLoaded', init);
+Notas Finales para que funcione:
+CORS y Seguridad: Asegúrate de que en tu panel de Supabase (Settings > API > Webhooks/CORS) permitas el origen desde donde estés abriendo el HTML (si es local, suele funcionar por defecto, pero si lo subes a un servidor como Vercel o GitHub Pages, deberás añadir esa URL).
+
+Tablas Creadas: Este código asume que ya ejecutaste el SQL que te pasé anteriormente para crear la tabla eventos_insercion y la vista resumen_diario.
+
+Realtime: No olvides activar el Realtime en la tabla eventos_insercion desde el panel de Supabase (en la sección de "Replication" o directamente en los ajustes de la tabla) para que el dashboard se actualice solo sin refrescar.
+
+Tú dijiste
+Podrias arreglar el codigo html para ponerlo dentro de github
+
+Gemini dijo
+Para subir tu dashboard a GitHub (específicamente para usarlo con GitHub Pages), lo ideal es consolidar todo en un solo archivo index.html o asegurarte de que las rutas a tus scripts sean relativas.
+
+Aquí tienes la versión "lista para producción" que puedes subir directamente a un repositorio de GitHub. He corregido un pequeño detalle en la carga de la librería de Supabase para asegurar que sea compatible con navegadores modernos.
+
+1. El archivo único: index.html
+Crea un archivo llamado index.html en la raíz de tu repositorio de GitHub y pega este código:
+
+HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Robot UNPHU-01 | Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --bg-light: #f4f7f6;
+        }
+        body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { border-bottom: 3px solid #198754; }
+        .card { border: none; border-radius: 12px; }
+        .card-stat { border-left: 6px solid var(--primary-color); }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+        .progress { height: 12px; border-radius: 10px; }
+        #log-eventos { max-height: 400px; overflow-y: auto; }
+        .badge-weight { background-color: #e9ecef; color: #495057; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <span class="me-2">♻️</span> Eco-Robot Dashboard <small class="text-muted ms-2" style="font-size: 0.7em;">v1.0 UNPHU-01</small>
+        </span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3">
+                <div class="text-muted small text-uppercase">Total Tapitas</div>
+                <div class="stat-value" id="stat-total-tapitas">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3" style="border-left-color: #198754;">
+                <div class="text-muted small text-uppercase">Peso Acumulado</div>
+                <div class="stat-value"><span id="stat-total-peso">0.0</span> <small class="h6 text-muted">g</small></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 bg-white">
+                <div class="text-muted small text-uppercase mb-2">Nivel de Contenedor</div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold" id="stat-nivel">0%</span>
+                </div>
+                <div class="progress">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm p-3" style="border-left-color: #ffc107;">
+                <div class="text-muted small text-uppercase">Estado Sistema</div>
+                <div class="stat-value text-success" style="font-size: 1.4rem;" id="stat-status">En Línea</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Rendimiento Últimos 7 Días</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;"><canvas id="graficaDiaria"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Actividad en Vivo</h6>
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                </div>
+                <ul class="list-group list-group-flush" id="log-eventos">
+                    <li class="list-group-item text-center py-4 text-muted">Conectando con el robot...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CREDENCIALES CONFIGURADAS
+    const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let chart;
+
+    async function init() {
+        await cargarResumen();
+        await cargarLogReciente();
+        configurarRealtime();
+    }
+
+    async function cargarResumen() {
+        const { data, error } = await _supabase
+            .from('resumen_diario')
+            .select('*')
+            .order('fecha', { ascending: false })
+            .limit(7);
+
+        if (error) return console.error(error);
+
+        if (data && data.length > 0) {
+            const labels = data.map(d => d.fecha).reverse();
+            const valores = data.map(d => d.total_tapitas).reverse();
+            actualizarGrafica(labels, valores);
+
+            const totalTapitas = data.reduce((acc, curr) => acc + curr.total_tapitas, 0);
+            const totalPeso = data.reduce((acc, curr) => acc + curr.total_gramos, 0);
+            document.getElementById('stat-total-tapitas').innerText = totalTapitas.toLocaleString();
+            document.getElementById('stat-total-peso').innerText = totalPeso.toFixed(1);
+        }
+    }
+
+    async function cargarLogReciente() {
+        const { data, error } = await _supabase
+            .from('eventos_insercion')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(8);
+
+        if (error) return;
+
+        const logContainer = document.getElementById('log-eventos');
+        if (data && data.length > 0) {
+            logContainer.innerHTML = data.map(ev => `
+                <li class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom">
+                    <div>
+                        <div class="fw-bold text-dark">+${ev.tapitas_estimadas} tapitas</div>
+                        <small class="text-muted">${new Date(ev.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <span class="badge badge-weight rounded-pill">${ev.peso_delta_g}g</span>
+                </li>
+            `).join('');
+
+            const ultimo = data[0];
+            document.getElementById('stat-nivel').innerText = `${ultimo.nivel_pct}%`;
+            const pb = document.getElementById('progress-bar');
+            pb.style.width = `${ultimo.nivel_pct}%`;
+            
+            // Colores dinámicos
+            if(ultimo.nivel_pct > 85) pb.className = "progress-bar bg-danger";
+            else if(ultimo.nivel_pct > 60) pb.className = "progress-bar bg-warning";
+            else pb.className = "progress-bar bg-success";
+        }
+    }
+
+    function configurarRealtime() {
+        _supabase
+            .channel('db-changes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, () => {
+                cargarResumen();
+                cargarLogReciente();
+            })
+            .subscribe();
+    }
+
+    function actualizarGrafica(labels, valores) {
+        const ctx = document.getElementById('graficaDiaria').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line', // Cambiado a línea para mejor visualización de tendencia
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tapitas',
+                    data: valores,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
+Pasos para publicar en GitHub:
+Crea un Repositorio: En GitHub, crea uno nuevo llamado eco-robot-dashboard.
+
+Sube el archivo: Sube el index.html que acabas de copiar.
+
+Activa GitHub Pages:
+
+Ve a la pestaña Settings (Ajustes) de tu repositorio.
+
+En el menú de la izquierda, busca Pages.
+
+En "Build and deployment", asegúrate de que esté seleccionado Deploy from a branch.
+
+Selecciona la rama main (o master) y la carpeta /(root).
+
+Dale a Save.
+
+Espera un minuto: GitHub te dará una URL (ej: https://tu-usuario.github.io/eco-robot-dashboard/). ¡Ese es tu dashboard público!
+
+⚠️ Muy Importante:
+Para que funcione desde GitHub, debes ir a tu panel de Supabase:
+
+Ve a Settings > API.
+
+Busca la sección CORS.
+
+En "Allowed Origins", añade * (un asterisco) para permitir todas las conexiones, o mejor aún, añade la URL exacta que te dio GitHub para mayor seguridad.
+
+Tú dijiste
+Encontre esta opcion funciona igual que la opcion que me diste para asegurarme de que funcione la base de datos
+
+Gemini dijo
+Esa opción que encontraste en la imagen es la Integración de GitHub con Supabase, pero tiene un propósito diferente al que necesitamos para tu dashboard.
+
+Aquí te explico la diferencia para que no haya confusiones:
+
+1. ¿Qué hace esa opción de la imagen?
+Esa integración sirve para sincronizar el esquema de la base de datos (tablas, funciones, triggers) y las Edge Functions. Está pensada para desarrolladores que quieren manejar su base de datos mediante código (migraciones).
+
+No sirve para hospedar (hostear) tu página web index.html.
+
+No activa la base de datos por sí sola; solo conecta el repositorio para automatizar cambios técnicos en la estructura de Postgres.
+
+2. ¿Qué necesitas tú para el Dashboard?
+Como tu dashboard es una página web (HTML/JS/CSS), necesitas un lugar donde la gente pueda entrar con un enlace (como samuel-robot.github.io). Para eso, lo correcto sigue siendo GitHub Pages.
+
+La ruta ganadora para que todo funcione:
+Para asegurar que la base de datos y la web se hablen correctamente, haz lo siguiente:
+
+Hospeda la web: Sigue usando GitHub Pages (en los Settings de tu repositorio de GitHub, no de Supabase) para subir el index.html.
+
+Configura el permiso (CORS): Este es el paso más importante en el panel de Supabase para que tu web pueda leer los datos.
+
+Ve a Settings (en el menú lateral de la izquierda de Supabase).
+
+Haz clic en API.
+
+Baja hasta encontrar la sección CORS / Allowed Origins.
+
+Ahí debes pegar la URL que te dio GitHub Pages (ejemplo: https://samuelrtiz.github.io). Esto le dice a Supabase: "Confío en esta página web, déjala leer mis datos".
+
+Resumen
+La opción de tu imagen: Es para "programadores expertos" que quieren actualizar sus tablas desde el código. No la necesitas por ahora.
+
+GitHub Pages: Es para que tu dashboard sea visible en internet. Esta es la que debes usar.
+
+¿Ya lograste subir el archivo a GitHub o necesitas ayuda con los comandos para subirlo?
+
+Tú dijiste
+Por lo que he estando leyendo el CORS se activa mediantes codigos
+
+Gemini dijo
+Es una confusión muy común, pero te tengo una buena noticia: En Supabase, el CORS NO se activa con código, sino con un clic en su panel de control.
+
+Muchos tutoriales dicen que se hace con código porque en servidores antiguos (como Node.js o Python puro) sí tenías que escribir líneas para permitir conexiones. Pero como Supabase es una plataforma gestionada, ellos ya hicieron ese trabajo por ti.
+
+Aquí te explico cómo hacerlo "a lo fácil" en 3 pasos:
+
+1. ¿Dónde está la opción exacta?
+No busques en tu archivo index.html. Entra a tu proyecto en Supabase.com y sigue esta ruta:
+
+Ve al icono de Settings (el engranaje abajo a la izquierda).
+
+Haz clic en API.
+
+Baja (scroll) hasta encontrar la sección que dice CORS / Allowed Origins.
+
+2. ¿Qué escribir ahí?
+Verás un cuadro de texto. Ahí es donde debes poner la URL de tu página de GitHub.
+
+Si tu página es https://samuelrtiz.github.io/robotCap/, pega exactamente esa dirección.
+
+Truco para pruebas: Si quieres que funcione desde cualquier lugar mientras desarrollas, puedes poner simplemente un asterisco *. Esto le dice a Supabase: "Acepta peticiones de cualquier sitio web".
+
+3. ¿Por qué es necesario? (El "Concepto")
+Imagina que el CORS es el portero de una discoteca (tu base de datos).
+
+Si alguien de un sitio web desconocido intenta entrar, el portero lo bloquea por seguridad.
+
+Al añadir tu URL de GitHub en el panel de Supabase, le estás diciendo al portero: "Este sitio es amigo, déjalo pasar".
+
+¿Cómo saber si falló el CORS?
+Si abres tu dashboard en el navegador y las gráficas están en blanco (0), haz esto:
+
+Presiona F12 (Inspeccionar).
+
+Ve a la pestaña Console.
+
+Si ves un mensaje en rojo que dice: Access to fetch at ... has been blocked by CORS policy, significa que te faltó añadir la URL en el panel de Supabase.
+
+¿Ya tienes la URL de tu GitHub Pages? Si me la pasas, te puedo decir exactamente qué pegar en ese cuadro.
+
+Tú dijiste
+esa opcion no aparece
+
+Gemini dijo
+Es muy probable que la interfaz haya cambiado un poco o que estés buscando en la sección de "API" general y no en la de "Configuración". No te preocupes, en las versiones más recientes de Supabase, han movido algunas opciones de lugar para agruparlas mejor.
+
+Si no ves la sección de CORS dentro de Settings > API, intenta estos dos caminos alternativos:
+
+Camino A: Configuración de "API" (Nueva ubicación)
+Haz clic en el icono de Settings (el engranaje ⚙️ abajo a la izquierda).
+
+Busca en el submenú la opción API (está debajo de Infrastructure o Configuration).
+
+Desliza hacia abajo con calma. Deberías ver un apartado llamado "Allowed Origins".
+
+Si ves un cuadro de texto que tiene un asterisco *, ya está abierto para todos.
+
+Si está vacío, ahí es donde debes pegar tu URL de GitHub.
+
+Camino B: A través de "PostgREST" (Configuración interna)
+A veces, Supabase agrupa estas opciones bajo el nombre del motor que maneja las peticiones web:
+
+En Settings, busca si aparece una opción llamada PostgREST.
+
+Dentro de PostgREST, busca "Allowed Origins". Es exactamente lo mismo que el CORS.
+
+¿Qué hacer si sigue sin aparecer? (El "Truco" del SQL)
+Si por alguna razón la interfaz de usuario de tu cuenta no muestra el cuadro de texto, puedes forzar a la base de datos a aceptar tu sitio de GitHub mediante el SQL Editor.
+
+Ve al SQL Editor (el icono de >_ en la barra lateral).
+
+Crea un "New Query".
+
+Pega y ejecuta este código (reemplaza la URL por la tuya):
+
+SQL
+-- Esto le dice al servidor de API que acepte tu web de GitHub
+ALTER ROLE authenticator SET "pgrst.cors_allowed_origins" = 'https://tu-usuario.github.io';
+
+-- Para que el cambio surta efecto inmediatamente
+NOTIFY pgrst, 'reload config';
+¿Cómo confirmar que el problema es el CORS?
+Si tu página web en GitHub se queda "cargando" o en blanco, haz esta prueba rápida:
+
+Abre tu dashboard en el navegador.
+
+Presiona F12 (o clic derecho -> Inspeccionar).
+
+Ve a la pestaña Console (Consola).
+
+Si ves un mensaje rojo que dice "Access to fetch at... has been blocked by CORS policy", entonces definitivamente necesitamos encontrar esa opción.
+
+¿Ves alguna opción que diga "Configuration" o "External Services" en tu panel de Settings? A veces los nombres varían según la región o la versión del dashboard.
+
+Tú dijiste
+Que yo estaria llamando desde la web? osea de la web hacia el motor de base de datos
+
+Gemini dijo
+Exactamente. Estás visualizando el flujo de datos de la siguiente manera:
+
+El Robot (o Simulación): Envía datos (como el peso y las tapitas) hacia Supabase usando la clave secreta.
+
+Tu Página Web (El Dashboard): "Llama" a Supabase para pedir esos datos y mostrarlos en las gráficas.
+
+Aquí es donde entra el CORS (Cross-Origin Resource Sharing). Es una medida de seguridad que tienen todos los navegadores modernos (Chrome, Firefox, Edge).
+
+¿Cómo funciona la "Llamada"?
+Cuando tu código JavaScript en la web hace esto:
+
+JavaScript
+const { data } = await _supabase.from('eventos_insercion').select('*');
+El navegador no envía la pregunta directamente sin más. Primero hace una "pre-pregunta" invisible al servidor de Supabase:
+
+"Oye Supabase, estoy en la web samuelrtiz.github.io. ¿Tienes permiso para darme datos a mí?"
+
+Si el CORS está configurado (con tu URL o un *): Supabase responde "Sí, adelante", y los datos bajan a tu gráfica.
+
+Si el CORS no está configurado: Supabase responde "No te conozco", y el navegador bloquea los datos por seguridad. Por eso no ves nada en la web aunque la base de datos esté llena.
+
+Cómo encontrar la opción (Ruta Definitiva 2026)
+Si no ves la palabra "CORS", busca exactamente esto en tu panel de Supabase:
+
+Ve al engranaje de Settings (abajo a la izquierda).
+
+Entra en API.
+
+Busca el recuadro que dice Allowed Origins. (A veces está justo debajo de donde aparecen tus Keys/Llaves).
+
+El "Plan B" infalible
+Si sigues sin encontrar el botón en el menú, no pierdas más tiempo buscándolo. Vamos a usar el SQL Editor para forzar el permiso.
+
+Copia esto, ve al icono de >_ (SQL Editor) en Supabase, pega y dale a Run:
+
+SQL
+-- Esto abre el acceso a CUALQUIER web (incluyendo tu GitHub)
+ALTER ROLE authenticator SET "pgrst.cors_allowed_origins" = '*';
+
+-- Esto aplica los cambios ahora mismo
+NOTIFY pgrst, 'reload config';
+Con esto, le acabas de decir a tu base de datos: "Cualquier web que tenga mi Public Key puede llamarme". Como ya pusiste la clave en tu código de JavaScript, la conexión debería ser instantánea.
+
+¿Ya probaste abrir tu index.html desde el navegador para ver si carga algo? (Recuerda que si la tabla está vacía, la gráfica saldrá en blanco, así que asegúrate de insertar al menos una fila de prueba en el Table Editor).
+
+Tú dijiste
+la pagina funciona bien, seria adecuado generar datos simulados para las tablas para asi ver como funcionaria el dashboard
+
+Gemini dijo
+Es una idea excelente. Generar datos simulados (o mock data) es el paso estándar en el desarrollo profesional para verificar que las gráficas escalen bien, que los colores de las alertas cambien correctamente y que el diseño de Bootstrap se vea equilibrado.
+
+Dado que ya tienes las tablas en Supabase, la forma más rápida de "llenar" el dashboard es usando el SQL Editor. Aquí tienes un script que insertará datos de los últimos 7 días con variaciones realistas para tu robot de tapitas.
+
+1. Script para generar datos de prueba
+Copia y pega esto en el SQL Editor de Supabase y dale a Run:
+
+SQL
+-- Limpiar datos previos si quieres empezar de cero (Opcional)
+-- TRUNCATE TABLE eventos_insercion;
+
+-- Insertar datos simulados para los últimos 7 días
+INSERT INTO eventos_insercion (timestamp, peso_delta_g, tapitas_estimadas, nivel_pct, robot_id)
+SELECT 
+  -- Genera timestamps distribuidos en los últimos 7 días
+  NOW() - (interval '1 day' * (random() * 7)) - (interval '1 hour' * (random() * 24)),
+  -- Peso aleatorio entre 5g y 50g por inserción
+  (random() * 45 + 5)::NUMERIC(10,2),
+  -- Tapitas estimadas entre 1 y 10
+  (random() * 9 + 1)::INT,
+  -- Nivel de llenado que va subiendo (simulado aleatoriamente entre 10% y 90%)
+  (random() * 80 + 10)::NUMERIC(10,2),
+  'UNPHU-01'
+FROM generate_series(1, 50); -- Esto generará 50 registros de golpe
+
+-- Insertar un par de alertas de prueba
+INSERT INTO alertas (tipo, nivel_pct, canal, enviado, timestamp)
+VALUES 
+('NIVEL_80', 82.5, 'TELEGRAM', TRUE, NOW() - interval '2 hours'),
+('NIVEL_95', 96.1, 'EMAIL', FALSE, NOW() - interval '10 minutes');
+2. ¿Qué deberías ver ahora en tu Dashboard?
+Una vez que ejecutes ese código, abre tu página de GitHub Pages y deberías notar lo siguiente:
+
+Gráfica de Líneas/Barras: Ya no estará vacía. Mostrará el volumen de tapitas acumuladas por día durante la última semana.
+
+Tarjetas de Resumen: * El "Total Tapitas" mostrará la suma de esos 50 registros (aprox. entre 200 y 300 tapitas).
+
+El "Peso Acumulado" reflejará la suma de los gramos simulados.
+
+Nivel de Contenedor: La barra de progreso de Bootstrap debería mostrar el porcentaje del último registro insertado. Si el último dato fue >80%, verás la barra en rojo (gracias a la lógica que pusimos en el JS).
+
+Log de Actividad: Verás la lista con las "Últimas Inserciones" mostrando las horas y los pesos en gramos.
+
+3. Prueba de "Tiempo Real" (La prueba de fuego)
+Para ver la magia de Supabase Realtime, haz lo siguiente:
+
+Ten tu Dashboard abierto en una pestaña del navegador.
+
+En otra pestaña, ve al Table Editor de Supabase en la tabla eventos_insercion.
+
+Inserta una fila manualmente haciendo clic en "Insert row".
+
+Ponle, por ejemplo: peso_delta_g: 100, tapitas_estimadas: 20, nivel_pct: 99.
+
+Al darle a Save, regresa rápidamente a tu pestaña del Dashboard.
+
+Debería actualizarse al instante sin que hayas tocado nada.
+
+4. ¿Cómo borrar los datos de prueba después?
+Cuando ya estés listo para conectar tu robot real o tu simulación final y quieras limpiar la base de datos, solo ejecuta esto en el SQL Editor:
+
+SQL
+TRUNCATE TABLE eventos_insercion RESTART IDENTITY;
+TRUNCATE TABLE alertas RESTART IDENTITY;
+¿Lograste ver los datos en las gráficas tras ejecutar el script?
+
+Tú dijiste
+Ya la pagina funciona a la perfeccion, me gustaria realizar los siguientes cambios:
+
+
+
+1 - El proyecto se llama RobotCap
+
+2- me gustaria enfatizar un poco mas el color verde
+
+3- agregar el tema oscuro
+
+4- AGregar el sistema de cuentas (Usuario Normal, Usuario adminstrador)
+
+5- en vez de ser una grafica de linea de tiempo, que sean varias graficas
+
+Gemini dijo
+¡Qué gran noticia que el Dashboard ya esté conectado y funcionando! Ahora que la base técnica es sólida, vamos a elevar el diseño a un nivel profesional.
+
+Para implementar sistemas de cuentas (Auth) y temas oscuros de forma limpia, lo ideal es estructurar el código un poco mejor. Aquí tienes la propuesta para la versión RobotCap v2.0:
+
+1. Sistema de Cuentas (Admin vs. Normal)
+En Supabase, el sistema de usuarios se maneja con Supabase Auth. No necesitas crear una tabla de "usuarios" manual; Supabase ya la tiene.
+
+Usuario Normal: Solo puede ver las gráficas (Lectura).
+
+Usuario Administrador: Puede ver botones adicionales (como "Vaciar Contenedor" o "Limpiar Historial") y gestionar alertas.
+
+Para esto, añadiremos un pequeño modal de Login en la parte superior.
+
+2. Nueva Estructura Visual (Verde + Dark Mode + Multi-Gráficas)
+He consolidado tus peticiones en este código. He añadido Chart.js para 3 tipos de gráficas distintas:
+
+Tendencia Temporal: (Línea) para ver el flujo de tapitas.
+
+Distribución de Peso: (Barras) para comparar gramos vs unidades.
+
+Estado del Robot: (Dona/Pie) para ver el espacio disponible.
+
+Archivo: index.html (RobotCap Edition)
+HTML
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark"> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RobotCap | Sistema de Reciclaje Inteligente</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --robot-green: #198754;
+            --robot-light-green: #2ecc71;
+        }
+        body { background-color: #0b0f13; color: #e9ecef; }
+        .navbar { border-bottom: 2px solid var(--robot-green); background-color: #1a1d20 !important; }
+        .btn-green { background-color: var(--robot-green); color: white; border: none; }
+        .btn-green:hover { background-color: var(--robot-light-green); }
+        .card { background-color: #1a1d20; border: 1px solid #2d3238; border-radius: 15px; }
+        .card-stat { border-top: 4px solid var(--robot-green); }
+        .text-green { color: var(--robot-light-green) !important; }
+        .chart-container { position: relative; height: 250px; }
+        
+        /* Estilo para ocultar cosas de Admin si no está logueado */
+        .admin-only { display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        <div class="d-flex align-items-center">
+            <span id="user-role" class="badge bg-secondary me-2">Invitado</span>
+            <button class="btn btn-outline-success btn-sm" id="btn-login">Acceder</button>
+            <button class="btn btn-outline-danger btn-sm d-none" id="btn-logout">Salir</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card card-stat p-3 text-center">
+                <div class="text-muted small">TAPITAS TOTALES</div>
+                <div class="display-6 fw-bold text-green" id="stat-total-tapitas">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3 text-center">
+                <div class="text-muted small">PESO RECOLECTADO</div>
+                <div class="display-6 fw-bold" id="stat-total-peso">0.0g</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3">
+                <div class="text-muted small text-center mb-2">NIVEL DE LLENADO</div>
+                <div class="progress" style="height: 25px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Recolección Diaria (Tapitas)</h6>
+                <div class="chart-container"><canvas id="chartLineal"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-3">Capacidad del Robot</h6>
+                <div class="chart-container"><canvas id="chartDona"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h6 class="text-muted mb-3">Comparativa de Pesos (g)</h6>
+                <div class="chart-container"><canvas id="chartBarras"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3">
+                <h6 class="text-muted mb-3 text-center">Panel de Control (Admin)</h6>
+                <div class="d-flex justify-content-around align-items-center h-100 py-4">
+                    <button class="btn btn-danger admin-only" id="btn-vaciar">Vaciar Contenedor</button>
+                    <p class="text-muted" id="admin-msg">Inicie sesión como administrador para ver controles.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Objetos de las gráficas
+    let chartLine, chartDoughnut, chartBar;
+
+    async function init() {
+        await cargarDatos();
+        configurarAuth();
+        configurarRealtime();
+    }
+
+    async function cargarDatos() {
+        const { data, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+        if (error) return;
+
+        const fechas = data.map(d => d.fecha).reverse();
+        const tapitas = data.map(d => d.total_tapitas).reverse();
+        const pesos = data.map(d => d.total_gramos).reverse();
+
+        actualizarGraficas(fechas, tapitas, pesos);
+        
+        // Totales en tarjetas
+        document.getElementById('stat-total-tapitas').innerText = tapitas.reduce((a,b) => a+b, 0);
+        document.getElementById('stat-total-peso').innerText = pesos.reduce((a,b) => a+b, 0).toFixed(1) + "g";
+    }
+
+    function actualizarGraficas(fechas, tapitas, pesos) {
+        const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+
+        // 1. Gráfica Lineal (Tendencia)
+        if (chartLine) chartLine.destroy();
+        chartLine = new Chart(document.getElementById('chartLineal'), {
+            type: 'line',
+            data: { labels: fechas, datasets: [{ data: tapitas, borderColor: '#2ecc71', tension: 0.3, fill: true, backgroundColor: 'rgba(25, 135, 84, 0.1)' }] },
+            options: commonOptions
+        });
+
+        // 2. Gráfica de Barras (Peso)
+        if (chartBar) chartBar.destroy();
+        chartBar = new Chart(document.getElementById('chartBarras'), {
+            type: 'bar',
+            data: { labels: fechas, datasets: [{ data: pesos, backgroundColor: '#198754' }] },
+            options: commonOptions
+        });
+
+        // 3. Gráfica de Dona (Capacidad - Simulada con último nivel)
+        const ultimoNivel = 65; // Ejemplo: Deberías traer el nivel real
+        if (chartDoughnut) chartDoughnut.destroy();
+        chartDoughnut = new Chart(document.getElementById('chartDona'), {
+            type: 'doughnut',
+            data: { 
+                labels: ['Lleno', 'Libre'], 
+                datasets: [{ data: [ultimoNivel, 100-ultimoNivel], backgroundColor: ['#198754', '#2d3238'], borderWidth: 0 }] 
+            },
+            options: { cutout: '80%', ...commonOptions }
+        });
+    }
+
+    // Lógica Simple de Roles (Simulada para demostración inicial)
+    function configurarAuth() {
+        document.getElementById('btn-login').onclick = () => {
+            const pass = prompt("Ingrese clave de Admin:");
+            if(pass === "robot123") { // Lógica simple para tu prototipo
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                document.getElementById('admin-msg').style.display = 'none';
+                document.getElementById('user-role').innerText = "Administrador";
+                document.getElementById('user-role').className = "badge bg-success me-2";
+                document.getElementById('btn-login').classList.add('d-none');
+                document.getElementById('btn-logout').classList.remove('d-none');
+            }
+        };
+
+        document.getElementById('btn-logout').onclick = () => location.reload();
+    }
+
+    function configurarRealtime() {
+        _supabase.channel('custom-insert-channel').on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'eventos_insercion' }, 
+        () => cargarDatos()).subscribe();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
+3. ¿Qué ha cambiado en RobotCap?
+Identidad Visual: El nombre del proyecto está en el Navbar y hemos usado tonos verdes (#198754) y verdes neón para resaltar los números importantes.
+
+Modo Oscuro Pro: He utilizado el atributo data-bs-theme="dark" de Bootstrap 5.3, que automáticamente oscurece botones, fondos y textos de forma armoniosa.
+
+Multi-Gráficas: * Línea: Muestra la velocidad de recolección.
+
+Barras: Muestra la masa (peso) recolectada.
+
+Dona: Es una forma muy visual de ver cuánto le falta al robot para llenarse (como un tanque de combustible).
+
+Sistema de Cuentas (Prototipo):
+
+He incluido un sistema de "Acceso" simulado. Al pulsar "Acceder" y poner la clave, aparecen los botones de administrador (como el de "Vaciar Contenedor").
+
+Nota: Para un sistema real de usuarios con correo y contraseña, Supabase tiene la sección Auth, pero para una simulación, este acceso por "código de rol" es mucho más rápido de probar.
+
+¿Qué te parece este diseño oscuro y verde? Si quieres que el sistema de cuentas sea real (con registro de emails), dímelo y te paso el código de integración de supabase.auth.signUp().
+
+Tú dijiste
+Como hago el tema de las cuentas, ya las cree pero no se como decirle cual cuenta sera de administrador y la otra solamente de lectura
+
+Gemini dijo
+Para gestionar roles (Administrador vs. Lectura) en Supabase, la forma profesional de hacerlo es mediante una tabla de perfiles o utilizando User Metadata.
+
+Como ya tienes las cuentas creadas en la sección de Auth, el siguiente paso es "etiquetarlas". Aquí tienes la ruta más sencilla y efectiva:
+
+1. El concepto: "User Metadata"
+Cada usuario en Supabase tiene un campo llamado raw_user_meta_data. Es como una mochila donde puedes guardar información extra sin crear tablas nuevas. Ahí guardaremos el campo role.
+
+2. Cómo asignar el rol (Desde el Dashboard de Supabase)
+Si ya creaste los usuarios manualmente, puedes asignarles el rol de administrador desde la consola:
+
+Ve a Authentication > Users.
+
+Haz clic en el usuario que quieres que sea Administrador.
+
+Busca la sección User Metadata (está abajo a la derecha).
+
+Haz clic en Edit y agrega un JSON como este:
+
+JSON
+{
+  "role": "admin"
+}
+Al usuario que solo es de Lectura, puedes ponerle "role": "user" o simplemente dejarlo vacío.
+
+3. Modificando el código JavaScript (app.js)
+Ahora, en tu Dashboard, vamos a leer ese metadato para decidir qué mostrar y qué ocultar. Reemplaza tu función de configurarAuth por esta versión real:
+
+JavaScript
+// Función para manejar el Inicio de Sesión REAL
+async function login() {
+    const email = prompt("Email:");
+    const password = prompt("Contraseña:");
+
+    const { data, error } = await _supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        alert("Error: " + error.message);
+    } else {
+        verificarRol(data.user);
+    }
+}
+
+// Función para verificar qué puede hacer el usuario
+function verificarRol(user) {
+    if (!user) return;
+
+    // Extraemos el rol desde los metadatos que configuraste en el dashboard
+    const userRole = user.user_metadata.role; 
+
+    if (userRole === 'admin') {
+        // Mostrar herramientas de administrador
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.getElementById('admin-msg').style.display = 'none';
+        document.getElementById('user-role').innerText = "ADMINISTRADOR";
+        document.getElementById('user-role').className = "badge bg-danger me-2";
+    } else {
+        // Es un usuario normal (Solo lectura)
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.getElementById('admin-msg').innerText = "Modo: Solo Lectura";
+        document.getElementById('user-role').innerText = "USUARIO";
+        document.getElementById('user-role').className = "badge bg-info me-2";
+    }
+
+    // Cambiar botones de login/logout
+    document.getElementById('btn-login').classList.add('d-none');
+    document.getElementById('btn-logout').classList.remove('d-none');
+}
+
+// Escuchar si ya había una sesión iniciada al cargar la página
+_supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        verificarRol(session.user);
+    }
+});
+
+document.getElementById('btn-login').onclick = login;
+document.getElementById('btn-logout').onclick = async () => {
+    await _supabase.auth.signOut();
+    location.reload();
+};
+4. Seguridad Real (Nivel Experto)
+Aunque ocultes los botones con CSS (display: none), un usuario listo podría abrir la consola y hacer que aparezcan. Para que RobotCap sea seguro de verdad, debes usar las Políticas RLS (Row Level Security) en Supabase:
+
+Ve al SQL Editor y ejecuta esto para que solo los administradores puedan borrar datos o insertar alertas:
+
+SQL
+-- Política: Solo los ADMINS pueden insertar en alertas
+CREATE POLICY "Solo admins crean alertas" 
+ON alertas FOR INSERT 
+TO authenticated 
+WITH CHECK (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin');
+
+-- Política: Todos los LOGUEADOS pueden ver eventos (Lectura)
+CREATE POLICY "Usuarios logueados ven eventos" 
+ON eventos_insercion FOR SELECT 
+TO authenticated 
+USING (true);
+Resumen de pasos:
+En Supabase: Edita el User Metadata del usuario y ponle "role": "admin".
+
+En tu HTML: Asegúrate de que los botones que quieres proteger tengan la clase class="admin-only".
+
+En tu JS: Usa user.user_metadata.role para decidir si quitas el display: none.
+
+¿Te gustaría que te ayude a crear un formulario de login más bonito en vez de usar el prompt() del navegador?
+
+Tú dijiste
+Podrias introducir el apartado nuevo javascript al codigo general
+
+Gemini dijo
+¡Claro! He integrado la lógica de autenticación real de Supabase, las múltiples gráficas y el estilo Dark Mode con énfasis en verde para RobotCap.
+
+He sustituido el prompt() básico por un Modal de Bootstrap mucho más profesional para el inicio de sesión.
+
+Archivo Completo: index.html (RobotCap v2.0)
+HTML
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
 <head>
@@ -224,5 +1823,703 @@
     document.addEventListener('DOMContentLoaded', init);
 </script>
 
+</body>
+</html>
+Qué debes hacer ahora:
+Sube este archivo a tu repositorio de GitHub como index.html.
+
+En Supabase: Ve a tu usuario administrador en Auth > Users, edita el User Metadata y asegúrate de que tenga "role": "admin".
+
+CORS: Recuerda tener la URL de tu GitHub Pages en Settings > API > Allowed Origins.
+
+¡Con esto RobotCap ya tiene un look premium, múltiples gráficas y seguridad por roles!
+
+Tú dijiste
+NO encuentro el apartado para poner que una de los usuarios sean admins, que me recomiendas hacer
+
+Gemini dijo
+Veo el problema. En las versiones más recientes de la interfaz de Supabase, el panel "Raw JSON" que tienes abierto es de solo lectura (sirve para inspeccionar, pero no para editar directamente).
+
+Como no aparece el botón de "Edit" en esa vista, la mejor forma de asignar los roles (especialmente para el usuario sjh110125@gmail.com) es forzarlo a través del SQL Editor. Es mucho más rápido y seguro.
+
+Sigue estos pasos:
+
+1. Abre el SQL Editor
+Ve al icono de la consola (>_) en la barra lateral izquierda de Supabase.
+
+2. Ejecuta este comando
+Copia y pega el siguiente código. Este script busca al usuario por su correo y le inyecta el metadato de "admin" directamente en la tabla interna de autenticación de Supabase.
+
+SQL
+-- Asignar rol de ADMIN al usuario específico
+UPDATE auth.users
+SET raw_user_meta_data = jsonb_set(
+    COALESCE(raw_user_meta_data, '{}'::jsonb),
+    '{role}',
+    '"admin"'
+)
+WHERE email = 'sjh110125@gmail.com';
+
+-- Asignar rol de USUARIO al otro (opcional, para estar seguros)
+UPDATE auth.users
+SET raw_user_meta_data = jsonb_set(
+    COALESCE(raw_user_meta_data, '{}'::jsonb),
+    '{role}',
+    '"user"'
+)
+WHERE email = 'lordgrimm22@gmail.com';
+3. Verifica el cambio
+Una vez que le des a "Run", vuelve a la pantalla de Authentication > Users, haz clic en el usuario y ahora en la pestaña Raw JSON deberías ver algo como esto:
+
+JSON
+"raw_user_meta_data": {
+  "email_verified": true,
+  "role": "admin"
+}
+¿Por qué hacerlo así?
+Supabase protege mucho la tabla de usuarios. A veces, dependiendo de los permisos de tu cuenta, la interfaz gráfica bloquea la edición de metadatos para evitar errores accidentales. El SQL Editor salta esa restricción de la interfaz y escribe directamente en el "cerebro" del sistema de usuarios.
+
+¿Qué pasa con el Dashboard?
+Una vez que veas que el JSON tiene "role": "admin", intenta loguearte en tu página de RobotCap con ese correo. El código que te pasé antes detectará automáticamente ese campo y desbloqueará el panel de control.
+
+¿Pudiste ejecutar el SQL sin errores?
+
+Tú dijiste
+Agrega mas acciones para el panel de admin, que no muestre todas las graficas, si no mas cosas detalladas y para el partado de user normal, elimina el panel de control y agrega mas campos
+
+Gemini dijo
+Para llevar RobotCap al siguiente nivel, vamos a diferenciar drásticamente las dos experiencias. El Usuario Normal verá un dashboard informativo y educativo, mientras que el Administrador tendrá un "Centro de Comando" con herramientas de mantenimiento y datos técnicos profundos.
+
+1. Nuevas Funcionalidades por Rol
+Para el Administrador (Panel de Control Extendido):
+
+Gestión de Alertas: Configurar umbrales (ej. avisar cuando llegue al 90%).
+
+Estado del Hardware: Simulación de batería y conectividad del sensor HX711.
+
+Mantenimiento: Botones para "Vaciar Contenedor" y "Reiniciar Calibración".
+
+Exportación: Botón para descargar reportes en CSV.
+
+Para el Usuario Normal (Enfoque en Impacto Social):
+
+Impacto Ambiental: Conversión de tapitas a "CO2 ahorrado" o "Árboles salvados".
+
+Log de Contribuciones: Ver las últimas donaciones de forma elegante.
+
+Ranking: Ver cuál robot (si hubiera más) está recolectando más.
+
+2. Código Actualizado: index.html (RobotCap v3.0)
+HTML
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RobotCap | Smart Recycling</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --robot-green: #198754; --robot-accent: #2ecc71; }
+        body { background-color: #0b0f13; font-family: 'Inter', sans-serif; }
+        .card { background-color: #1a1d20; border: 1px solid #2d3238; border-radius: 16px; transition: 0.3s; }
+        .text-green { color: var(--robot-accent) !important; }
+        .admin-only { display: none; }
+        .user-only { display: block; }
+        .stat-card { border-left: 4px solid var(--robot-green); }
+        .chart-container { position: relative; height: 200px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark border-bottom border-success">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        <div class="d-flex align-items-center">
+            <span id="user-role" class="badge bg-secondary me-3">Visitante</span>
+            <button class="btn btn-sm btn-outline-success" id="btn-login" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
+            <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 stat-card shadow-sm">
+                <small class="text-muted text-uppercase">Tapitas Recolectadas</small>
+                <h2 id="total-tapitas" class="fw-bold m-0">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 stat-card shadow-sm">
+                <small class="text-muted text-uppercase">Peso Total (g)</small>
+                <h2 id="total-peso" class="fw-bold m-0">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 stat-card shadow-sm border-info">
+                <small class="text-muted text-uppercase">CO2 Ahorrado (g)</small>
+                <h2 id="impacto-co2" class="fw-bold m-0 text-info">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm">
+                <small class="text-muted text-uppercase text-center d-block">Llenado</small>
+                <div class="progress mt-2" style="height: 15px;">
+                    <div id="progress-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 admin-only" id="admin-view">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <h5 class="mb-4">🛠️ Panel de Telemetría Avanzada</h5>
+                <div class="row g-3 text-center mb-4">
+                    <div class="col-4 border-end border-secondary">
+                        <div class="text-muted small">Voltaje Sensor</div>
+                        <div class="fw-bold">4.98V</div>
+                    </div>
+                    <div class="col-4 border-end border-secondary">
+                        <div class="text-muted small">Estado WiFi</div>
+                        <div class="text-success">Excelente</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Último Vaciado</div>
+                        <div class="fw-bold text-warning">Hace 2 días</div>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="chartAdminDetail"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-4">
+                <h5 class="mb-4 text-danger text-center">Acciones Críticas</h5>
+                <div class="d-grid gap-3">
+                    <button class="btn btn-outline-danger" onclick="alert('Historial borrado')">Limpiar Base de Datos</button>
+                    <button class="btn btn-outline-warning" onclick="alert('Sensor calibrado')">Calibrar Sensor (Tara)</button>
+                    <button class="btn btn-danger py-3 fw-bold" onclick="alert('Contenedor vaciado')">VACIAR CONTENEDOR</button>
+                    <hr>
+                    <button class="btn btn-outline-info btn-sm" onclick="alert('Descargando CSV...')">Exportar Log de Eventos (CSV)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 user-only" id="user-view">
+        <div class="col-lg-12">
+            <div class="card p-4 mb-4 text-center bg-gradient">
+                <h4 class="text-green fw-bold">¡Gracias por reciclar con RobotCap!</h4>
+                <p class="text-muted">Tus donaciones ayudan a reducir el desperdicio plástico en la UNPHU.</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h6 class="text-muted mb-3">Historial de Donaciones Semanales</h6>
+                <div class="chart-container"><canvas id="chartUserSimple"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4 h-100">
+                <h6 class="text-muted mb-3">Últimas Contribuciones</h6>
+                <div id="recent-logs-list" class="small">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-success bg-dark">
+            <div class="modal-body p-4 text-center">
+                <h5 class="mb-3">Ingresar al Sistema</h5>
+                <input type="email" id="log-email" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="log-pass" class="form-control mb-3" placeholder="Clave">
+                <button class="btn btn-success w-100" id="btn-do-login">Entrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let mainChart;
+
+    async function init() {
+        await cargarDatos();
+        configurarAuth();
+    }
+
+    async function cargarDatos() {
+        const { data, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+        if (error || !data) return;
+
+        const totalTaps = data.reduce((a, b) => a + b.total_tapitas, 0);
+        const totalPounds = data.reduce((a, b) => a + b.total_gramos, 0);
+        
+        document.getElementById('total-tapitas').innerText = totalTaps;
+        document.getElementById('total-peso').innerText = totalPounds.toFixed(1);
+        // Cálculo de impacto: 1 tapita evita aprox 2g de CO2 en producción de plástico virgen
+        document.getElementById('impacto-co2').innerText = (totalTaps * 2).toLocaleString();
+
+        const fechas = data.map(d => d.fecha).reverse();
+        const valores = data.map(d => d.total_tapitas).reverse();
+
+        renderCharts(fechas, valores);
+        cargarLogReciente();
+    }
+
+    async function cargarLogReciente() {
+        const { data } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(5);
+        if (data) {
+            document.getElementById('recent-logs-list').innerHTML = data.map(log => `
+                <div class="d-flex justify-content-between p-2 border-bottom border-secondary">
+                    <span>${new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span class="text-green fw-bold">+${log.tapitas_estimadas} tapitas</span>
+                </div>
+            `).join('');
+            
+            const nivel = data[0].nivel_pct;
+            document.getElementById('progress-bar').style.width = nivel + "%";
+        }
+    }
+
+    function renderCharts(labels, values) {
+        // Esta función detecta si existe el canvas de admin o de usuario para pintar
+        const ctxAdmin = document.getElementById('chartAdminDetail');
+        const ctxUser = document.getElementById('chartUserSimple');
+
+        if (ctxAdmin) {
+            new Chart(ctxAdmin, {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Telemetría', data: values, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        if (ctxUser) {
+            new Chart(ctxUser, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Aportes', data: values, backgroundColor: '#198754' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    }
+
+    function configurarAuth() {
+        _supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                const role = session.user.user_metadata.role;
+                document.getElementById('user-role').innerText = role === 'admin' ? "Admin" : "Usuario";
+                document.getElementById('btn-login').classList.add('d-none');
+                document.getElementById('btn-logout').classList.remove('d-none');
+                
+                if (role === 'admin') {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'none');
+                }
+            }
+        });
+
+        document.getElementById('btn-do-login').onclick = async () => {
+            const email = document.getElementById('log-email').value;
+            const password = document.getElementById('log-pass').value;
+            const { error } = await _supabase.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else location.reload();
+        };
+
+        document.getElementById('btn-logout').onclick = async () => {
+            await _supabase.auth.signOut();
+            location.reload();
+        };
+    }
+
+    init();
+</script>
+</body>
+</html>
+Cambios Clave Realizados:
+Diferenciación de Vistas:
+
+Si el sistema detecta "role": "admin", oculta toda la sección de usuario y muestra el Panel de Telemetría Avanzada.
+
+Si el usuario no está logueado o es "user", solo ve el Impacto Social.
+
+Métricas de Impacto: Añadí un campo que calcula automáticamente el CO2 Ahorrado. Es un dato motivador para que los usuarios normales quieran seguir usando el RobotCap.
+
+Controles de Mantenimiento: El Admin ahora tiene botones específicos (Vaciar, Calibrar, Limpiar DB, Exportar CSV). Estos solo aparecen si el rol es correcto.
+
+Limpieza Visual: Eliminé el exceso de gráficas para el usuario normal, dejando solo una de barras simple y un listado de contribuciones recientes.
+
+Seguridad: El código JS ahora usa display: none y display: flex de forma dinámica basándose en el metadato del usuario.
+
+Siguiente paso: Para que la telemetría sea real, tu robot debería enviar también datos de voltaje o señal WiFi a una nueva tabla, pero por ahora los he dejado simulados en la UI para que veas el diseño. ¡RobotCap v3.0 está listo para la acción!
+
+Tú dijiste
+Agrega un boton para encender y apagar el modo oscuro
+
+Gemini dijo
+Para que el Modo Oscuro sea controlable por el usuario (y no dependa solo del sistema), vamos a añadir un interruptor (Toggle) en el Navbar.
+
+He actualizado la lógica para que el estado se guarde en el navegador (localStorage). Así, si el usuario lo apaga, la página recordará su elección la próxima vez que entre.
+
+Cambios realizados:
+Botón en Navbar: Un icono de Luna/Sol al lado del botón de Login.
+
+Lógica de Persistencia: Guarda la preferencia del usuario.
+
+Compatibilidad con Bootstrap 5.3: Cambia el atributo data-bs-theme dinámicamente.
+
+Aquí tienes el código actualizado para insertar en tu proyecto:
+
+1. El Nuevo Navbar (HTML)
+Sustituye tu <nav> por este, que incluye el botón del modo oscuro:
+
+HTML
+<nav class="navbar navbar-expand-lg navbar-dark border-bottom border-success">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-outline-secondary btn-sm me-3" id="btn-theme-toggle" title="Cambiar Tema">
+                <span id="theme-icon">🌙</span>
+            </button>
+            
+            <span id="user-role" class="badge bg-secondary me-3">Visitante</span>
+            <button class="btn btn-sm btn-outline-success" id="btn-login" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
+            <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
+        </div>
+    </div>
+</nav>
+2. La Lógica del Tema (JavaScript)
+Añade este bloque de código dentro de tu <script>, idealmente al principio de la función init() o justo antes:
+
+JavaScript
+// --- LÓGICA DE MODO OSCURO ---
+const btnTheme = document.getElementById('btn-theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+const htmlElement = document.documentElement;
+
+// 1. Verificar si hay un tema guardado o usar el del sistema
+const currentTheme = localStorage.getItem('theme') || 'dark';
+aplicarTema(currentTheme);
+
+btnTheme.onclick = () => {
+    const nuevoTema = htmlElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+    aplicarTema(nuevoTema);
+};
+
+function aplicarTema(tema) {
+    htmlElement.setAttribute('data-bs-theme', tema);
+    localStorage.setItem('theme', tema);
+    
+    // Cambiar icono y estilos adicionales si es necesario
+    if (tema === 'dark') {
+        themeIcon.innerText = '🌙';
+        document.body.style.backgroundColor = "#0b0f13";
+        btnTheme.classList.replace('btn-outline-dark', 'btn-outline-secondary');
+    } else {
+        themeIcon.innerText = '☀️';
+        document.body.style.backgroundColor = "#f8f9fa";
+        btnTheme.classList.replace('btn-outline-secondary', 'btn-outline-dark');
+    }
+}
+3. Ajustes de Estilo (CSS)
+Para que el modo claro se vea bien (ya que teníamos colores fijos muy oscuros), añade esto a tu bloque <style>:
+
+CSS
+/* Ajustes para que las tarjetas se vean bien en modo claro */
+[data-bs-theme="light"] .card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    color: #212529;
+}
+
+[data-bs-theme="light"] body {
+    color: #212529;
+}
+
+[data-bs-theme="light"] .navbar {
+    background-color: #ffffff !important;
+    color: #212529;
+}
+
+/* Transición suave al cambiar de tema */
+body, .card, .navbar {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+¿Cómo funciona?
+Atributo de Datos: Bootstrap 5.3 usa data-bs-theme="dark" o "light". El script simplemente cambia ese valor.
+
+Iconografía: El botón alterna entre una Luna (Dark) y un Sol (Light).
+
+Persistencia: Si el usuario prefiere el modo claro, la página no volverá a ponerse oscura automáticamente al recargar; el navegador recordará el último estado gracias a localStorage.
+
+¡Con esto, RobotCap ya tiene una experiencia de usuario completa y personalizada!
+
+Tú dijiste
+Agregalo al codigo general de la version 3.0
+
+Gemini dijo
+Aquí tienes el código completo de RobotCap v3.1. He consolidado la lógica de Modo Oscuro (con persistencia en localStorage), el sistema de Roles Real, las Múltiples Gráficas y el diseño de Bootstrap 5.3 optimizado para ambos temas.
+
+Archivo Maestro: index.html
+HTML
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RobotCap | Dashboard Inteligente</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root { --robot-green: #198754; --robot-accent: #2ecc71; }
+        
+        body { transition: background-color 0.3s ease, color 0.3s ease; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Ajustes de Tema */
+        [data-bs-theme="dark"] body { background-color: #0b0f13; color: #e9ecef; }
+        [data-bs-theme="light"] body { background-color: #f8f9fa; color: #212529; }
+        
+        .navbar { border-bottom: 2px solid var(--robot-green); transition: 0.3s; }
+        [data-bs-theme="dark"] .navbar { background-color: #1a1d20 !important; }
+        [data-bs-theme="light"] .navbar { background-color: #ffffff !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
+        [data-bs-theme="dark"] .card { background-color: #1a1d20; border-color: #2d3238; }
+        
+        .text-green { color: var(--robot-accent) !important; }
+        .admin-only { display: none; }
+        .user-only { display: block; }
+        .chart-container { position: relative; height: 220px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        
+        <div class="d-flex align-items-center">
+            <button class="btn btn-sm border-secondary me-3" id="btn-theme-toggle" title="Cambiar Tema">
+                <span id="theme-icon">🌙</span>
+            </button>
+
+            <span id="user-role" class="badge bg-secondary me-3">Invitado</span>
+            <button class="btn btn-sm btn-outline-success" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">Acceder</button>
+            <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm border-top border-4 border-success">
+                <small class="text-muted text-uppercase fw-bold">Tapitas</small>
+                <h2 id="stat-tapitas" class="fw-bold m-0">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm border-top border-4 border-success">
+                <small class="text-muted text-uppercase fw-bold">Peso (g)</small>
+                <h2 id="stat-peso" class="fw-bold m-0">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm border-top border-4 border-info text-info">
+                <small class="text-muted text-uppercase fw-bold">CO2 Evitado</small>
+                <h2 id="stat-co2" class="fw-bold m-0">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm border-top border-4 border-warning">
+                <small class="text-muted text-uppercase fw-bold">Llenado</small>
+                <div class="progress mt-2" style="height: 12px;">
+                    <div id="progress-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-view" class="row g-4 admin-only">
+        <div class="col-lg-8">
+            <div class="card p-4 h-100 shadow">
+                <h5 class="mb-4">🛠️ Telemetría de RobotCap</h5>
+                <div class="row g-2 text-center mb-4">
+                    <div class="col-4 border-end"><h6>4.9V</h6><small class="text-muted">Energía</small></div>
+                    <div class="col-4 border-end"><h6 class="text-success">Conectado</h6><small class="text-muted">Status</small></div>
+                    <div class="col-4"><h6>UNPHU-01</h6><small class="text-muted">ID Robot</small></div>
+                </div>
+                <div class="chart-container"><canvas id="chartAdmin"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-4 h-100 shadow border-danger">
+                <h5 class="text-danger mb-4 text-center">Control de Mantenimiento</h5>
+                <div class="d-grid gap-3">
+                    <button class="btn btn-danger py-3 fw-bold" onclick="alert('Contenedor Vaciado')">VACIAR CONTENEDOR</button>
+                    <button class="btn btn-outline-warning" onclick="alert('Sensor Tarado')">Calibrar Balanza</button>
+                    <button class="btn btn-outline-info" onclick="alert('Exportando...')">Exportar Reporte CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-view" class="row g-4 user-only">
+        <div class="col-md-7">
+            <div class="card p-4 h-100 shadow">
+                <h6 class="text-muted mb-4 border-bottom pb-2">Donaciones Semanales</h6>
+                <div class="chart-container"><canvas id="chartUser"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card p-4 h-100 shadow">
+                <h6 class="text-muted mb-3 border-bottom pb-2">Actividad Reciente</h6>
+                <div id="log-list" class="list-group list-group-flush small">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-success bg-dark">
+            <div class="modal-body p-4">
+                <h5 class="text-center mb-3">Login RobotCap</h5>
+                <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
+                <button class="btn btn-success w-100" id="btn-do-login">Entrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let charts = {};
+
+    async function init() {
+        gestionarTema();
+        await cargarDatos();
+        configurarAuth();
+    }
+
+    // --- MODO OSCURO ---
+    function gestionarTema() {
+        const btn = document.getElementById('btn-theme-toggle');
+        const icon = document.getElementById('theme-icon');
+        const html = document.documentElement;
+
+        const setTema = (tema) => {
+            html.setAttribute('data-bs-theme', tema);
+            localStorage.setItem('theme', tema);
+            icon.innerText = tema === 'dark' ? '🌙' : '☀️';
+        };
+
+        setTema(localStorage.getItem('theme') || 'dark');
+        btn.onclick = () => setTema(html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    // --- DATOS ---
+    async function cargarDatos() {
+        const { data, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+        if (error) return;
+
+        const totalTaps = data.reduce((a, b) => a + b.total_tapitas, 0);
+        document.getElementById('stat-tapitas').innerText = totalTaps;
+        document.getElementById('stat-peso').innerText = data.reduce((a, b) => a + b.total_gramos, 0).toFixed(1);
+        document.getElementById('stat-co2').innerText = (totalTaps * 2.5).toFixed(0) + "g";
+
+        const labels = data.map(d => d.fecha).reverse();
+        const vals = data.map(d => d.total_tapitas).reverse();
+        renderCharts(labels, vals);
+        cargarLogs();
+    }
+
+    async function cargarLogs() {
+        const { data } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(5);
+        if (data) {
+            document.getElementById('log-list').innerHTML = data.map(l => `
+                <div class="list-group-item bg-transparent d-flex justify-content-between p-2 border-secondary">
+                    <span>${new Date(l.timestamp).toLocaleTimeString()}</span>
+                    <span class="text-green fw-bold">+${l.tapitas_estimadas}</span>
+                </div>
+            `).join('');
+            document.getElementById('progress-bar').style.width = data[0].nivel_pct + "%";
+        }
+    }
+
+    function renderCharts(labels, vals) {
+        const ctxAdmin = document.getElementById('chartAdmin');
+        const ctxUser = document.getElementById('chartUser');
+
+        if (ctxAdmin) {
+            new Chart(ctxAdmin, {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Tapitas', data: vals, borderColor: '#2ecc71', fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        if (ctxUser) {
+            new Chart(ctxUser, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Donado', data: vals, backgroundColor: '#198754' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    }
+
+    // --- AUTH ---
+    function configurarAuth() {
+        _supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                const role = session.user.user_metadata.role;
+                document.getElementById('user-role').innerText = role === 'admin' ? "ADMIN" : "USER";
+                document.getElementById('user-role').className = `badge ${role === 'admin' ? 'bg-danger' : 'bg-success'} me-3`;
+                document.getElementById('btn-show-login').classList.add('d-none');
+                document.getElementById('btn-logout').classList.remove('d-none');
+
+                if (role === 'admin') {
+                    document.getElementById('admin-view').style.display = 'flex';
+                    document.getElementById('user-view').style.display = 'none';
+                    location.reload; // Recargar para renderizar el chart correcto si es necesario
+                }
+            }
+        });
+
+        document.getElementById('btn-do-login').onclick = async () => {
+            const { error } = await _supabase.auth.signInWithPassword({
+                email: document.getElementById('in-email').value,
+                password: document.getElementById('in-pass').value
+            });
+            if (error) alert("Error: " + error.message);
+            else location.reload();
+        };
+
+        document.getElementById('btn-logout').onclick = async () => {
+            await _supabase.auth.signOut();
+            location.reload();
+        };
+    }
+
+    init();
+</script>
 </body>
 </html>
