@@ -186,6 +186,19 @@
     </footer>
 </div>
 
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-success bg-dark text-white">
+            <div class="modal-body p-4 text-center">
+                <h5 class="mb-3">Admin Login</h5>
+                <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
+                <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
+                <button class="btn btn-success w-100" id="btn-do-login">Acceder</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
@@ -237,18 +250,16 @@
         const container = document.getElementById('heatmap-container');
         container.innerHTML = '';
         for(let i=0; i<28; i++) {
-            const tapitasRandom = Math.floor(Math.random() * 50); // Simulación de datos
+            const tapitasRandom = Math.floor(Math.random() * 50);
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
             d.style.opacity = (tapitasRandom / 50) + 0.1;
             d.style.background = 'var(--robot-accent)';
-            // ACCIÓN: MOSTRAR NÚMERO DE TAPITAS AL PONER EL MOUSE
             d.title = `Tapitas recolectadas: ${tapitasRandom}`; 
             container.appendChild(d);
         }
     }
 
-    // Funciones de soporte (gráficos, auth, etc) se mantienen iguales...
     function renderUserCharts(resumen) {
         new Chart(document.getElementById('chartUserHistorial'), {
             type: 'line',
@@ -291,28 +302,54 @@
     }
 
     function configurarAuth() {
+        // CORRECCIÓN: Evento de cambio de sesión
         _supabase.auth.onAuthStateChange((event, session) => {
             const badge = document.getElementById('user-role');
+            const btnShowLogin = document.getElementById('btn-show-login');
+            const btnLogout = document.getElementById('btn-logout');
+            const adminView = document.getElementById('admin-view');
+            const userView = document.getElementById('user-view');
+
             if (session) {
-                const role = session.user.user_metadata.role;
+                const role = session.user.user_metadata.role || 'admin';
                 badge.innerText = role.toUpperCase();
-                if (role === 'admin') {
-                    badge.classList.add('admin-active');
-                    document.getElementById('admin-view').classList.remove('admin-only');
-                    document.getElementById('user-view').classList.add('admin-only');
-                }
-                document.getElementById('btn-show-login').classList.add('d-none');
-                document.getElementById('btn-logout').classList.remove('d-none');
+                badge.classList.add('admin-active');
+                adminView.classList.remove('admin-only');
+                userView.classList.add('admin-only');
+                btnShowLogin.classList.add('d-none');
+                btnLogout.classList.remove('d-none');
+            } else {
+                badge.innerText = "Invitado";
+                badge.classList.remove('admin-active');
+                adminView.classList.add('admin-only');
+                userView.classList.remove('admin-only');
+                btnShowLogin.classList.remove('d-none');
+                btnShowLogin.classList.remove('d-none'); // Reset visibility
+                btnLogout.classList.add('d-none');
             }
         });
+
+        // CORRECCIÓN: Lógica del botón de login dentro del modal
         document.getElementById('btn-do-login').onclick = async () => {
-            const { error } = await _supabase.auth.signInWithPassword({
-                email: document.getElementById('in-email').value,
-                password: document.getElementById('in-pass').value
-            });
-            if (error) alert(error.message); else location.reload();
+            const email = document.getElementById('in-email').value;
+            const password = document.getElementById('in-pass').value;
+            
+            const { error } = await _supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                alert("Error: " + error.message);
+            } else {
+                // Cerrar modal tras éxito
+                const modalEl = document.getElementById('loginModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+            }
         };
-        document.getElementById('btn-logout').onclick = async () => { await _supabase.auth.signOut(); location.reload(); };
+
+        document.getElementById('btn-logout').onclick = async () => { 
+            await _supabase.auth.signOut(); 
+            location.reload(); 
+        };
     }
 
     init();
