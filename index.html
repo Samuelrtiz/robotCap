@@ -35,6 +35,17 @@
         .h-large { height: 350px; }
         .h-gauge { height: 280px; }
         
+        /* ANIMACIÓN DE BARRA DE PROGRESO (Regresada) */
+        .progress-bar-animated-custom {
+            animation: progress-bar-stripes 1s linear infinite, pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
         /* HEATMAP */
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; position: relative; transition: 0.3s; }
@@ -44,6 +55,10 @@
         .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .table-mini { font-size: 0.75rem; }
+
+        /* FOOTER (Regresado) */
+        footer { border-top: 1px solid rgba(255,255,255,0.1); padding: 2rem 0; margin-top: 3rem; }
+        .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -64,23 +79,35 @@
     <div class="row g-3 mb-4 text-center">
         <div class="col-md-4"><div class="card p-3 border-top border-4 border-success"><small class="text-muted fw-bold">TOTAL TAPITAS</small><h2 id="stat-tapitas" class="fw-bold m-0 text-green">0</h2></div></div>
         <div class="col-md-4"><div class="card p-3 border-top border-4 border-success"><small class="text-muted fw-bold">PESO ACUMULADO</small><h2 id="stat-peso" class="fw-bold m-0">0g</h2></div></div>
-        <div class="col-md-4"><div class="card p-3 border-top border-4 border-warning"><small class="text-muted fw-bold">CONTENEDOR: <span id="fill-pct">0%</span></small><div class="progress mt-2" style="height: 10px;"><div id="progress-bar" class="progress-bar bg-success" style="width: 0%"></div></div></div></div>
+        <div class="col-md-4">
+            <div class="card p-3 border-top border-4 border-warning">
+                <small class="text-muted fw-bold">CONTENEDOR: <span id="fill-pct">0%</span></small>
+                <div class="progress mt-2" style="height: 12px; background-color: rgba(255,255,255,0.1);">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success progress-bar-animated-custom" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="user-view" class="row g-4">
         <div class="col-12"><div class="card p-4"><h6>📅 Historial de Recolección Semanal</h6><div class="h-large"><canvas id="chartUserHistorial"></canvas></div></div></div>
         <div class="col-md-7"><div class="card p-4"><h6>🔥 Mapa de Calor: Actividad</h6><div id="heatmap-container" class="heatmap-grid mb-2"></div><div class="d-flex justify-content-between small text-muted"><span>Lun</span><span>Dom</span></div></div></div>
-        <div class="col-md-5"><div class="card p-4 text-center"><h6>🚀 Ritmo de Donación</h6><div class="h-gauge"><canvas id="chartGauge"></canvas></div><h4 id="gauge-text" class="fw-bold text-green">0%</h4></div></div>
+        <div class="col-md-5"><div class="card p-4 text-center">
+            <h6>🚀 Ritmo de Donación Diario</h6>
+            <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
+            <h4 id="gauge-text" class="fw-bold text-green">0%</h4>
+            <small class="text-muted">vs. Promedio histórico</small>
+        </div></div>
     </div>
 
     <div id="admin-view" class="row g-4 admin-only">
         <div class="col-12">
             <div class="card bg-dark border-success p-3">
                 <div class="row g-2">
-                    <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100" onclick="alert('Enviando recalibración...')">⚖️ Calibrar HX711</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100" onclick="alert('Reiniciando Mosquitto...')">🔄 Reiniciar MQTT</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="alert('Generando PDF...')">📄 Reporte Ahora</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100" data-bs-toggle="modal" data-bs-target="#resetModal">🧹 Reset Contador</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100">⚖️ Calibrar HX711</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100">🔄 Reiniciar MQTT</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100">📄 Reporte Ahora</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100">🧹 Reset Contador</button></div>
                 </div>
             </div>
         </div>
@@ -94,47 +121,33 @@
 
         <div class="col-md-4">
             <div class="card p-4">
-                <h6 class="text-info fw-bold small">🖥️ STATUS RASPBERRY PI & MQTT</h6>
-                <div class="small mb-3"><span class="status-dot dot-green"></span> Mosquitto: <b class="text-success">Activo</b></div>
+                <h6 class="text-info fw-bold small">🖥️ STATUS HARDWARE</h6>
+                <div class="small mb-3"><span class="status-dot dot-green"></span> MQTT Broker: <b class="text-success">Online</b></div>
                 <div class="row text-center g-2 border-top pt-2">
                     <div class="col-4"><small class="text-muted">CPU</small><br><b>45%</b></div>
                     <div class="col-4"><small class="text-muted">RAM</small><br><b>312MB</b></div>
                     <div class="col-4"><small class="text-muted">TEMP</small><br><b class="text-warning">52°C</b></div>
                 </div>
-                <hr>
-                <div class="list-group list-group-flush small">
-                    <div class="list-group-item bg-transparent d-flex justify-content-between px-0 text-muted">Sensores <span>✅ OK</span></div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between px-0 text-muted">Batería <span>🔋 4.1V</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card p-4">
-                <h6 class="small fw-bold text-muted">🔔 REGISTRO TELEGRAM</h6>
-                <table class="table table-sm table-mini">
-                    <thead><tr><th>Hora</th><th>Nivel</th><th>Status</th></tr></thead>
-                    <tbody><tr><td>10:45</td><td>90%</td><td><span class="badge bg-success">Entregado</span></td></tr></tbody>
-                </table>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card p-4">
-                <h6 class="small fw-bold text-muted">📧 REPORTES PDF (FACCI)</h6>
-                <table class="table table-sm table-mini">
-                    <thead><tr><th>Archivo</th><th>Fecha</th><th>Status</th></tr></thead>
-                    <tbody><tr><td>Reporte_Abril</td><td>Hoy</td><td><span class="badge bg-success">Enviado</span></td></tr></tbody>
-                </table>
             </div>
         </div>
 
         <div class="col-12">
             <div class="card p-4">
-                <div class="d-flex justify-content-between mb-3"><h6>📂 Registros Crudos (SQL)</h6><button class="btn btn-sm btn-success" onclick="exportarCSV()">Exportar CSV</button></div>
-                <div class="table-responsive" style="max-height: 300px;"><table class="table table-sm table-hover table-mini"><thead class="table-dark"><tr><th>Fecha</th><th>Gramos</th><th>Tapitas</th><th>Nivel</th><th>Robot</th></tr></thead><tbody id="admin-table-body"></tbody></table></div>
+                <div class="d-flex justify-content-between mb-3"><h6>📂 Registros de Base de Datos</h6><button class="btn btn-sm btn-success" onclick="exportarCSV()">Exportar CSV</button></div>
+                <div class="table-responsive" style="max-height: 300px;"><table class="table table-sm table-hover table-mini"><thead class="table-dark"><tr><th>Fecha/Hora</th><th>Gramos</th><th>Tapitas</th><th>Nivel %</th><th>ID Robot</th></tr></thead><tbody id="admin-table-body"></tbody></table></div>
             </div>
         </div>
     </div>
+
+    <footer class="text-center">
+        <p class="disclaimer mb-2">
+            <strong>Nota:</strong> Los datos mostrados en este panel (Mapa de calor y comparativos) pueden ser simulados para fines de demostración técnica de la interfaz v3.7.
+        </p>
+        <p class="mb-0 small text-muted">
+            © 2026 RobotCap Project | Facultad de Ciencias e Ingeniería (FACCI) <br>
+            <strong>Universidad Nacional Pedro Henríquez Ureña (UNPHU)</strong>
+        </p>
+    </footer>
 </div>
 
 <div class="modal fade" id="loginModal" tabindex="-1">
@@ -144,7 +157,7 @@
                 <h5 class="mb-3">Admin Login</h5>
                 <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
                 <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
-                <button class="btn btn-success w-100" id="btn-do-login">Acceder al Sistema</button>
+                <button class="btn btn-success w-100" id="btn-do-login">Acceder</button>
             </div>
         </div>
     </div>
@@ -171,7 +184,6 @@
     }
 
     async function cargarDatos() {
-        // Cargar Resumen (v3.5)
         const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
         if (resumen) {
             document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
@@ -179,30 +191,29 @@
             renderUserCharts(resumen);
         }
 
-        // Cargar Eventos (v3.6)
         const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
         if (eventos) {
             datosEventos = eventos;
-            document.getElementById('fill-pct').innerText = eventos[0].nivel_pct + "%";
-            document.getElementById('progress-bar').style.width = eventos[0].nivel_pct + "%";
-            renderHeatmap(eventos);
+            const nivel = eventos[0].nivel_pct;
+            document.getElementById('fill-pct').innerText = nivel + "%";
+            document.getElementById('progress-bar').style.width = nivel + "%";
+            
+            renderHeatmap();
             actualizarTablaAdmin(eventos);
             renderAdminCharts();
         }
     }
 
     function renderUserCharts(resumen) {
-        // Linea Semanal
         new Chart(document.getElementById('chartUserHistorial'), {
             type: 'line',
             data: { 
                 labels: resumen.map(d => d.fecha).reverse(),
-                datasets: [{ label: 'Donaciones', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
+                datasets: [{ label: 'Tapitas', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
             },
             options: { maintainAspectRatio: false }
         });
 
-        // Gauge (Ritmo)
         const hoy = resumen[0]?.total_tapitas || 0;
         const prom = resumen.reduce((a,b) => a+b.total_tapitas, 0)/resumen.length;
         const pct = ((hoy/prom)*100).toFixed(0);
@@ -229,7 +240,7 @@
         });
     }
 
-    function renderHeatmap(eventos) {
+    function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
         container.innerHTML = '';
         for(let i=0; i<28; i++) {
@@ -284,8 +295,8 @@
     }
 
     function exportarCSV() {
-        let csv = "Fecha,Gramos,Tapitas\n";
-        datosEventos.forEach(e => csv += `${e.timestamp},${e.peso_delta_g},${e.tapitas_estimadas}\n`);
+        let csv = "Fecha,Gramos,Tapitas,Nivel\n";
+        datosEventos.forEach(e => csv += `${e.timestamp},${e.peso_delta_g},${e.tapitas_estimadas},${e.nivel_pct}\n`);
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
