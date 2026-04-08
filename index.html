@@ -3,41 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap | Dashboard </title>
+    <title>RobotCap v3.4 | Dashboard Consolidado</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --robot-green: #198754; --robot-accent: #2ecc71; }
-        body { transition: background-color 0.3s ease; font-family: 'Inter', sans-serif; }
+        :root { 
+            --robot-green: #198754; 
+            --robot-accent: #2ecc71;
+            --navbar-bg: #2ecc71;     /* Verde sólido para el header */
+            --navbar-text: #000000;   /* Texto negro para legibilidad */
+        }
         
+        body { transition: background-color 0.3s ease; font-family: 'Inter', sans-serif; }
+        [data-bs-theme="dark"] body { background-color: #0b0f13; }
+        [data-bs-theme="light"] body { background-color: #f8f9fa; }
+
+        /* --- ARREGLO DEL HEADER (SÓLIDO Y NEGRO) --- */
+        .navbar { 
+            background-color: var(--navbar-bg) !important; 
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+            z-index: 1050; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .navbar .navbar-brand, .navbar .badge, .navbar .btn { color: var(--navbar-text) !important; }
+        .navbar .btn-outline-success, .navbar .btn-outline-danger { border-color: var(--navbar-text) !important; }
+        
+        /* Toggle de Tema Estético */
         .theme-switch { width: 50px; height: 26px; background: #333; border-radius: 50px; position: relative; cursor: pointer; border: 1px solid #555; }
         .theme-switch .dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 4px; transition: 0.3s; }
-        [data-bs-theme="light"] .theme-switch { background: var(--robot-green); border-color: var(--robot-green); }
+        [data-bs-theme="light"] .theme-switch { background: #555; }
         [data-bs-theme="light"] .theme-switch .dot { left: 26px; }
 
-        .navbar { border-bottom: 2px solid var(--robot-green); }
         .card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .text-green { color: var(--robot-accent) !important; }
         .admin-only { display: none; }
         .chart-container-large { position: relative; height: 350px; width: 100%; }
-        .chart-container-sm { position: relative; height: 200px; }
-        
-        /* Estilo Tabla Admin */
-        .table-responsive { max-height: 300px; overflow-y: auto; font-size: 0.85rem; }
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .chart-container-sm { position: relative; height: 220px; }
+        .table-responsive { max-height: 300px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold text-green" href="#">🤖 RobotCap</a>
+        <a class="navbar-brand fw-bold" href="#">🤖 RobotCap</a>
         <div class="d-flex align-items-center">
             <div class="theme-switch me-4" id="btn-theme-toggle"><div class="dot"></div></div>
-            <span id="user-role" class="badge bg-secondary me-3">Invitado</span>
+            <span id="user-role" class="badge bg-dark text-white me-3">Invitado</span>
             <button class="btn btn-sm btn-outline-success" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">Acceder</button>
             <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
         </div>
@@ -47,22 +61,22 @@
 <div class="container mt-4">
     <div class="row g-3 mb-4 text-center">
         <div class="col-md-4">
-            <div class="card p-3 border-top border-4 border-success h-100">
-                <small class="text-muted text-uppercase fw-bold">Tapitas Recolectadas</small>
-                <h2 id="stat-tapitas" class="fw-bold m-0 text-green">0</h2>
+            <div class="card p-3 border-top border-4 border-dark h-100">
+                <small class="text-muted text-uppercase fw-bold">Tapitas Totales</small>
+                <h2 id="stat-tapitas" class="fw-bold m-0" style="color: var(--robot-green);">0</h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card p-3 border-top border-4 border-success h-100">
+            <div class="card p-3 border-top border-4 border-dark h-100">
                 <small class="text-muted text-uppercase fw-bold">Peso Acumulado</small>
                 <h2 id="stat-peso" class="fw-bold m-0">0g</h2>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card p-3 border-top border-4 border-warning h-100">
-                <small class="text-muted text-uppercase fw-bold">Nivel de Contenedor: <span id="fill-pct">0%</span></small>
+                <small class="text-muted text-uppercase fw-bold">Llenado: <span id="fill-pct">0%</span></small>
                 <div class="progress mt-2" style="height: 20px;">
-                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%"></div>
                 </div>
             </div>
         </div>
@@ -71,67 +85,43 @@
     <div id="admin-view" class="row g-4 admin-only">
         <div class="col-12">
             <div class="card p-4 shadow-sm">
-                <h6 class="mb-3">📊 Base de Datos Detallada (Eventos de Inserción)</h6>
+                <h6 class="mb-3 text-success">📂 Base de Datos en Tiempo Real (Excel View)</h6>
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm">
+                    <table class="table table-hover">
                         <thead class="table-dark">
-                            <tr>
-                                <th>Fecha/Hora</th>
-                                <th>Gramos (Δ)</th>
-                                <th>Tapitas Est.</th>
-                                <th>Nivel %</th>
-                                <th>ID Robot</th>
-                            </tr>
+                            <tr><th>Timestamp</th><th>Peso Δ</th><th>Tapitas</th><th>Nivel %</th><th>Status</th></tr>
                         </thead>
-                        <tbody id="admin-table-body">
-                            </tbody>
+                        <tbody id="admin-table-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
         <div class="col-md-5">
-            <div class="card p-4 h-100 shadow-sm border-info">
-                <h6 class="mb-4 text-info">⚙️ Integridad de Componentes</h6>
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                        Sensor de Carga (HX711)
-                        <span class="badge bg-success rounded-pill">Operativo</span>
-                    </div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                        Sensor Ultrasonido
-                        <span class="badge bg-success rounded-pill">Operativo</span>
-                    </div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                        Batería / Fuente
-                        <span class="badge bg-warning text-dark rounded-pill">Revisar (4.2V)</span>
-                    </div>
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                        Conectividad (WiFi)
-                        <span class="badge bg-success rounded-pill">-54 dBm</span>
-                    </div>
-                </div>
-                <button class="btn btn-info btn-sm mt-4 text-white" onclick="alert('Ejecutando Test de Estrés...')">Realizar Diagnóstico Completo</button>
+            <div class="card p-4 h-100 border-info">
+                <h6 class="mb-4 text-info fw-bold">⚙️ Integridad del Sistema</h6>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item bg-transparent d-flex justify-content-between">Sensor HX711 <span class="text-success">OK</span></li>
+                    <li class="list-group-item bg-transparent d-flex justify-content-between">Ultrasonido <span class="text-success">OK</span></li>
+                    <li class="list-group-item bg-transparent d-flex justify-content-between">Voltaje Batería <span class="text-warning">4.1V</span></li>
+                    <li class="list-group-item bg-transparent d-flex justify-content-between">Señal WiFi <span class="text-success">Estable</span></li>
+                </ul>
+                <button class="btn btn-outline-info btn-sm mt-3" onclick="alert('Iniciando calibración...')">Calibrar Sensores</button>
             </div>
         </div>
         <div class="col-md-7">
-            <div class="card p-4 h-100 shadow-sm">
-                <h6 class="text-muted mb-4">Relación Peso vs Unidades (7 días)</h6>
-                <div class="chart-container-sm"><canvas id="chartAdminComparativa"></canvas></div>
-            </div>
+            <div class="card p-4 h-100"><canvas id="chartAdminComparativa"></canvas></div>
         </div>
     </div>
 
     <div id="user-view" class="row g-4 user-only">
         <div class="col-12">
-            <div class="card p-4 shadow-sm">
-                <h6 class="text-muted mb-4">Historial de Recolección Semanal (Jerárquico)</h6>
+            <div class="card p-4"><h6 class="text-muted mb-4">Historial de Recolección Semanal</h6>
                 <div class="chart-container-large"><canvas id="chartUserHistorial"></canvas></div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card p-4 h-100 shadow-sm">
-                <h6 class="text-muted mb-4">Frecuencia de Uso por Hora (Hora Pico)</h6>
-                <div class="chart-container-sm"><canvas id="chartHoraPico"></canvas></div>
+            <div class="card p-4 h-100"><h6 class="text-muted mb-4">Capacidad de Carga Actual</h6>
+                <div class="chart-container-sm"><canvas id="chartCapacidadDona"></canvas></div>
             </div>
         </div>
         <div class="col-md-6">
@@ -143,25 +133,24 @@
     </div>
 
     <footer class="text-center mt-5 mb-4 border-top pt-3">
-        <p class="text-warning fw-bold small">⚠️ Este dashboard está utilizando información simulada</p>
-        <p class="text-muted small">© 2026 RobotCap Project - UNPHU</p>
+        <p class="text-warning fw-bold small">⚠️ Información Simulada para Desarrollo</p>
+        <p class="text-muted small">RobotCap UNPHU - 2026</p>
     </footer>
 </div>
 
 <div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content border-success bg-dark">
-            <div class="modal-body p-4 text-center text-white">
-                <h5 class="mb-3">Login RobotCap</h5>
+        <div class="modal-content border-success">
+            <div class="modal-body p-4 text-center">
+                <h5 class="mb-3">Acceso de Personal</h5>
                 <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
                 <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
-                <button class="btn btn-success w-100" id="btn-do-login">Entrar</button>
+                <button class="btn btn-success w-100" id="btn-do-login">Ingresar</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
@@ -173,103 +162,40 @@
         configurarAuth();
     }
 
-    function formatearFecha(fechaStr) {
-        const opciones = { weekday: 'short', day: '2-digit', month: 'short' };
-        return new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-ES', opciones);
-    }
-
     function gestionarTema() {
         const btn = document.getElementById('btn-theme-toggle');
-        const html = document.documentElement;
         const setTema = (tema) => {
-            html.setAttribute('data-bs-theme', tema);
+            document.documentElement.setAttribute('data-bs-theme', tema);
             localStorage.setItem('theme', tema);
         };
         setTema(localStorage.getItem('theme') || 'dark');
-        btn.onclick = () => setTema(html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+        btn.onclick = () => setTema(document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
     }
 
     async function cargarDatos() {
-        // Cargar Resumen Diario
-        const { data: resumen, error } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
-        if (error) return;
+        const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+        if (!resumen) return;
 
         const totalTaps = resumen.reduce((a, b) => a + b.total_tapitas, 0);
         document.getElementById('stat-tapitas').innerText = totalTaps;
         document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(1) + "g";
 
-        const labels = resumen.map(d => formatearFecha(d.fecha)).reverse();
-        const valsPeso = resumen.map(d => d.total_gramos).reverse();
-        const valsTaps = resumen.map(d => d.total_tapitas).reverse();
+        const labels = resumen.map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES', {weekday:'short', day:'2-digit'})).reverse();
+        renderCharts(labels, resumen.map(d => d.total_gramos).reverse(), resumen.map(d => d.total_tapitas).reverse());
 
-        renderCharts(labels, valsPeso, valsTaps);
-
-        // Cargar Eventos Crudos (Para tabla Admin y Logs)
-        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(20);
+        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(10);
         if (eventos) {
-            actualizarTablaAdmin(eventos);
-            actualizarLogs(eventos);
-            
-            const nivel = eventos[0].nivel_pct;
-            document.getElementById('fill-pct').innerText = nivel + "%";
-            document.getElementById('progress-bar').style.width = nivel + "%";
+            document.getElementById('admin-table-body').innerHTML = eventos.map(e => `<tr><td>${new Date(e.timestamp).toLocaleTimeString()}</td><td>${e.peso_delta_g}</td><td>${e.tapitas_estimadas}</td><td>${e.nivel_pct}%</td><td><span class="badge bg-success">En línea</span></td></tr>`).join('');
+            document.getElementById('log-list-user').innerHTML = eventos.slice(0,5).map(l => `<div class="list-group-item bg-transparent d-flex justify-content-between p-2"><span>Aporte Reciente</span><span class="text-success fw-bold">+${l.tapitas_estimadas}</span></div>`).join('');
+            document.getElementById('fill-pct').innerText = eventos[0].nivel_pct + "%";
+            document.getElementById('progress-bar').style.width = eventos[0].nivel_pct + "%";
         }
     }
 
-    function actualizarTablaAdmin(data) {
-        document.getElementById('admin-table-body').innerHTML = data.map(e => `
-            <tr>
-                <td>${new Date(e.timestamp).toLocaleString()}</td>
-                <td>${e.peso_delta_g}</td>
-                <td>${e.tapitas_estimadas}</td>
-                <td>${e.nivel_pct}%</td>
-                <td><span class="badge bg-secondary">${e.robot_id}</span></td>
-            </tr>
-        `).join('');
-    }
-
-    function actualizarLogs(data) {
-        document.getElementById('log-list-user').innerHTML = data.slice(0,5).map(l => `
-            <div class="list-group-item bg-transparent d-flex justify-content-between p-2">
-                <span>Hace poco</span>
-                <span class="text-green fw-bold">+${l.tapitas_estimadas} tapitas</span>
-            </div>
-        `).join('');
-    }
-
     function renderCharts(labels, pesos, taps) {
-        // 1. Historial Grande (Usuario)
-        new Chart(document.getElementById('chartUserHistorial'), {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'Tapitas', data: taps, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', fill: true, tension: 0.4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        // 2. Comparativa Admin
-        new Chart(document.getElementById('chartAdminComparativa'), {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'Peso (g)', data: pesos, backgroundColor: '#198754' },
-                    { label: 'Unidades', data: taps, backgroundColor: '#2ecc71' }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        // 3. Hora Pico (Simulada para visualización)
-        new Chart(document.getElementById('chartHoraPico'), {
-            type: 'polarArea',
-            data: {
-                labels: ['Mañana', 'Mediodía', 'Tarde', 'Noche'],
-                datasets: [{ data: [15, 45, 30, 10], backgroundColor: ['#198754', '#2ecc71', '#27ae60', '#16a085'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        new Chart(document.getElementById('chartUserHistorial'), { type: 'line', data: { labels, datasets: [{ label: 'Tapitas', data: taps, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false }});
+        new Chart(document.getElementById('chartAdminComparativa'), { type: 'bar', data: { labels, datasets: [{ label: 'Peso (g)', data: pesos, backgroundColor: '#198754' }, { label: 'Tapitas', data: taps, backgroundColor: '#2ecc71' }] }, options: { responsive: true, maintainAspectRatio: false }});
+        new Chart(document.getElementById('chartCapacidadDona'), { type: 'doughnut', data: { labels: ['Ocupado', 'Libre'], datasets: [{ data: [65, 35], backgroundColor: ['#198754', '#2d3238'] }] }, options: { cutout: '80%', responsive: true, maintainAspectRatio: false }});
     }
 
     function configurarAuth() {
@@ -285,22 +211,12 @@
                 }
             }
         });
-
         document.getElementById('btn-do-login').onclick = async () => {
-            const { error } = await _supabase.auth.signInWithPassword({
-                email: document.getElementById('in-email').value,
-                password: document.getElementById('in-pass').value
-            });
-            if (error) alert(error.message);
-            else location.reload();
+            const { error } = await _supabase.auth.signInWithPassword({ email: document.getElementById('in-email').value, password: document.getElementById('in-pass').value });
+            if (error) alert(error.message); else location.reload();
         };
-
-        document.getElementById('btn-logout').onclick = async () => {
-            await _supabase.auth.signOut();
-            location.reload();
-        };
+        document.getElementById('btn-logout').onclick = async () => { await _supabase.auth.signOut(); location.reload(); };
     }
-
     init();
 </script>
 </body>
