@@ -24,21 +24,19 @@
         .navbar { background-color: var(--navbar-bg) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
-        /* CORRECCIÓN 1: Soporte de color dinámico para tarjetas */
         .card { 
             border-radius: 16px; 
             overflow: hidden; 
             border: 1px solid rgba(0,0,0,0.1); 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            background-color: var(--bs-card-bg); /* Usa variable de Bootstrap */
+            background-color: var(--bs-card-bg);
         }
         
-        /* CORRECCIÓN 2: Barra de herramientas admin adaptable */
         .admin-toolbar {
             border-radius: 16px;
             padding: 1rem;
             border: 1px solid var(--robot-green);
-            background-color: var(--bs-tertiary-bg); /* Se adapta al tema */
+            background-color: var(--bs-tertiary-bg);
         }
 
         .card-header-custom { 
@@ -73,7 +71,6 @@
             100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
         }
 
-        /* CORRECCIÓN 3: Estilo de celdas del heatmap */
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .heatmap-cell { 
             aspect-ratio: 1; 
@@ -82,8 +79,8 @@
             cursor: pointer; 
             transition: 0.2s; 
         }
-        [data-bs-theme="dark"] .heatmap-cell { background-color: #222; } /* Fondo base en oscuro */
-        [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; } /* Fondo base en claro */
+        [data-bs-theme="dark"] .heatmap-cell { background-color: #222; }
+        [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; }
 
         .heatmap-cell:hover { transform: scale(1.1); filter: brightness(1.2); border: 1px solid var(--robot-green); }
 
@@ -270,25 +267,38 @@
         }
     }
 
-    // CORRECCIÓN: Lógica de heatmap y tooltips
+    // CORRECCIÓN APLICADA: Lógica de heatmap y tooltips
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
+        
+        // 1. Limpiar tooltips antiguos para evitar residuos en el DOM
+        const oldTooltips = document.querySelectorAll('.tooltip');
+        oldTooltips.forEach(t => t.remove());
+
         container.innerHTML = '';
+        
         for(let i=0; i<28; i++) {
             const tapitasRandom = Math.floor(Math.random() * 50);
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
+            
+            // Variar opacidad según intensidad
             d.style.opacity = (tapitasRandom / 50) + 0.1;
-            // Estilo directo para asegurar visibilidad de color
             d.style.backgroundColor = 'var(--robot-accent)';
             
-            // Atributos para que Bootstrap o el navegador muestren el dato
+            // Configuración de Tooltip
             d.setAttribute('data-bs-toggle', 'tooltip');
+            d.setAttribute('data-bs-placement', 'top');
             d.setAttribute('title', `Tapitas: ${tapitasRandom}`);
-            d.innerText = ''; // Limpiar contenido previo
             
             container.appendChild(d);
         }
+
+        // 2. Inicialización forzada de Tooltips para elementos dinámicos
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, { trigger: 'hover' });
+        });
     }
 
     function renderUserCharts(resumen) {
@@ -330,6 +340,8 @@
             const currentTheme = document.documentElement.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-bs-theme', newTheme);
+            // Volver a renderizar el heatmap para que los tooltips se adapten al nuevo tema
+            renderHeatmap();
         };
     }
 
