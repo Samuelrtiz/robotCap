@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap v3.6 | FACCI Admin Pro</title>
+    <title>RobotCap v3.7 | Dashboard Híbrido FACCI</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,13 +18,7 @@
         }
         
         body { transition: background-color 0.3s ease; font-family: 'Inter', sans-serif; }
-        
-        .navbar { 
-            background-color: var(--navbar-bg) !important; 
-            border-bottom: 2px solid rgba(0,0,0,0.1);
-            z-index: 1050; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        .navbar { background-color: var(--navbar-bg) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
         /* TEMA TOGGLE */
@@ -33,26 +27,23 @@
         [data-bs-theme="light"] .theme-switch { background: #ced4da; }
         [data-bs-theme="light"] .theme-switch .dot { left: 27px; background: #212529; }
 
-        #user-role.badge {
-            background-color: #6c757d !important;
-            color: white !important;
-            padding: 8px 12px;
-        }
+        #user-role.badge { background-color: #6c757d !important; color: white !important; padding: 8px 12px; }
         #user-role.badge.admin-active { background-color: #007bff !important; }
 
         .card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .admin-only { display: none; }
+        .admin-only { display: none !important; }
         .h-large { height: 350px; }
         .h-gauge { height: 280px; }
         
         /* HEATMAP */
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; position: relative; }
+        .heatmap-cell { aspect-ratio: 1; border-radius: 4px; background: #222; position: relative; transition: 0.3s; }
 
-        /* ADMIN ESTILOS */
+        /* ADMIN EXTRAS */
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .table-mini { font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -79,75 +70,68 @@
     <div id="user-view" class="row g-4">
         <div class="col-12"><div class="card p-4"><h6>📅 Historial de Recolección Semanal</h6><div class="h-large"><canvas id="chartUserHistorial"></canvas></div></div></div>
         <div class="col-md-7"><div class="card p-4"><h6>🔥 Mapa de Calor: Actividad</h6><div id="heatmap-container" class="heatmap-grid mb-2"></div><div class="d-flex justify-content-between small text-muted"><span>Lun</span><span>Dom</span></div></div></div>
-        <div class="col-md-5"><div class="card p-4 text-center"><h6>🚀 Ritmo de Donación</h6><div class="h-gauge"><canvas id="chartGauge"></canvas></div><h4 id="gauge-text" class="fw-bold">0%</h4></div></div>
+        <div class="col-md-5"><div class="card p-4 text-center"><h6>🚀 Ritmo de Donación</h6><div class="h-gauge"><canvas id="chartGauge"></canvas></div><h4 id="gauge-text" class="fw-bold text-green">0%</h4></div></div>
     </div>
 
     <div id="admin-view" class="row g-4 admin-only">
-        
         <div class="col-12">
             <div class="card bg-dark border-success p-3">
                 <div class="row g-2">
-                    <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100">⚖️ Calibrar HX711</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100">🔄 Reiniciar MQTT</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100">📄 Generar PDF Ahora</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100">🧹 Reset Contador</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-success btn-action w-100" onclick="alert('Enviando recalibración...')">⚖️ Calibrar HX711</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100" onclick="alert('Reiniciando Mosquitto...')">🔄 Reiniciar MQTT</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="alert('Generando PDF...')">📄 Reporte Ahora</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100" data-bs-toggle="modal" data-bs-target="#resetModal">🧹 Reset Contador</button></div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-8">
             <div class="card p-4">
-                <h6>📊 Mes Actual vs Mes Anterior</h6>
+                <h6>📊 Comparativo: Mes Actual vs Anterior</h6>
                 <div style="height: 250px;"><canvas id="chartAdminComparativo"></canvas></div>
             </div>
         </div>
 
         <div class="col-md-4">
             <div class="card p-4">
-                <h6 class="text-info fw-bold small">🛠️ INTEGRIDAD Y HARDWARE</h6>
-                <div class="small mb-3">
-                    <span class="status-dot dot-green"></span> Broker Mosquitto: <b>Online</b>
-                </div>
+                <h6 class="text-info fw-bold small">🖥️ STATUS RASPBERRY PI & MQTT</h6>
+                <div class="small mb-3"><span class="status-dot dot-green"></span> Mosquitto: <b class="text-success">Activo</b></div>
                 <div class="row text-center g-2 border-top pt-2">
-                    <div class="col-4"><small class="text-muted">CPU</small><br><b>42%</b></div>
-                    <div class="col-4"><small class="text-muted">RAM</small><br><b>280MB</b></div>
-                    <div class="col-4"><small class="text-muted">TEMP</small><br><b class="text-warning">51°C</b></div>
+                    <div class="col-4"><small class="text-muted">CPU</small><br><b>45%</b></div>
+                    <div class="col-4"><small class="text-muted">RAM</small><br><b>312MB</b></div>
+                    <div class="col-4"><small class="text-muted">TEMP</small><br><b class="text-warning">52°C</b></div>
                 </div>
                 <hr>
-                <ul class="list-group list-group-flush small">
-                    <li class="list-group-item bg-transparent px-0 d-flex justify-content-between">Sensor Peso <span>✅</span></li>
-                    <li class="list-group-item bg-transparent px-0 d-flex justify-content-between">Ultrasonido <span>✅</span></li>
-                </ul>
+                <div class="list-group list-group-flush small">
+                    <div class="list-group-item bg-transparent d-flex justify-content-between px-0 text-muted">Sensores <span>✅ OK</span></div>
+                    <div class="list-group-item bg-transparent d-flex justify-content-between px-0 text-muted">Batería <span>🔋 4.1V</span></div>
+                </div>
             </div>
         </div>
 
         <div class="col-md-6">
             <div class="card p-4">
-                <h6 class="small fw-bold">🔔 Alertas Recientes (Telegram)</h6>
-                <table class="table table-sm small">
-                    <thead><tr><th>Fecha</th><th>Nivel</th><th>Status</th></tr></thead>
-                    <tbody>
-                        <tr><td>Hoy 10:15</td><td>90%</td><td><span class="badge bg-success">Enviado</span></td></tr>
-                    </tbody>
+                <h6 class="small fw-bold text-muted">🔔 REGISTRO TELEGRAM</h6>
+                <table class="table table-sm table-mini">
+                    <thead><tr><th>Hora</th><th>Nivel</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>10:45</td><td>90%</td><td><span class="badge bg-success">Entregado</span></td></tr></tbody>
                 </table>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card p-4">
-                <h6 class="small fw-bold">📧 Reportes PDF Enviados (FACCI)</h6>
-                <table class="table table-sm small">
-                    <thead><tr><th>Reporte</th><th>Fecha</th><th>Email</th></tr></thead>
-                    <tbody>
-                        <tr><td>Mensual_Abril</td><td>01/04</td><td><span class="badge bg-success">Entregado</span></td></tr>
-                    </tbody>
+                <h6 class="small fw-bold text-muted">📧 REPORTES PDF (FACCI)</h6>
+                <table class="table table-sm table-mini">
+                    <thead><tr><th>Archivo</th><th>Fecha</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>Reporte_Abril</td><td>Hoy</td><td><span class="badge bg-success">Enviado</span></td></tr></tbody>
                 </table>
             </div>
         </div>
 
         <div class="col-12">
             <div class="card p-4">
-                <div class="d-flex justify-content-between mb-3"><h6>📂 Registro de Base de Datos</h6><button class="btn btn-sm btn-success" onclick="exportarCSV()">Exportar CSV</button></div>
-                <div class="table-responsive" style="max-height: 200px;"><table class="table table-sm table-hover"><thead class="table-dark"><tr><th>Fecha</th><th>Gramos</th><th>Tapitas</th><th>Robot</th></tr></thead><tbody id="admin-table-body"></tbody></table></div>
+                <div class="d-flex justify-content-between mb-3"><h6>📂 Registros Crudos (SQL)</h6><button class="btn btn-sm btn-success" onclick="exportarCSV()">Exportar CSV</button></div>
+                <div class="table-responsive" style="max-height: 300px;"><table class="table table-sm table-hover table-mini"><thead class="table-dark"><tr><th>Fecha</th><th>Gramos</th><th>Tapitas</th><th>Nivel</th><th>Robot</th></tr></thead><tbody id="admin-table-body"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -160,7 +144,7 @@
                 <h5 class="mb-3">Admin Login</h5>
                 <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
                 <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
-                <button class="btn btn-success w-100" id="btn-do-login">Entrar</button>
+                <button class="btn btn-success w-100" id="btn-do-login">Acceder al Sistema</button>
             </div>
         </div>
     </div>
@@ -170,6 +154,7 @@
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let datosEventos = [];
 
     async function init() {
         gestionarTema();
@@ -186,52 +171,67 @@
     }
 
     async function cargarDatos() {
-        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(20);
+        // Cargar Resumen (v3.5)
+        const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+        if (resumen) {
+            document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
+            document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(0) + "g";
+            renderUserCharts(resumen);
+        }
+
+        // Cargar Eventos (v3.6)
+        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
         if (eventos) {
-            document.getElementById('stat-tapitas').innerText = eventos.reduce((a, b) => a + b.tapitas_estimadas, 0);
-            document.getElementById('stat-peso').innerText = eventos.reduce((a, b) => a + b.peso_delta_g, 0) + "g";
+            datosEventos = eventos;
             document.getElementById('fill-pct').innerText = eventos[0].nivel_pct + "%";
             document.getElementById('progress-bar').style.width = eventos[0].nivel_pct + "%";
-            
-            renderUserCharts(eventos);
+            renderHeatmap(eventos);
             actualizarTablaAdmin(eventos);
+            renderAdminCharts();
         }
     }
 
-    function renderUserCharts(data) {
-        // Gauge (Version 3.5 corregida)
-        new Chart(document.getElementById('chartGauge'), {
-            type: 'doughnut',
-            data: { datasets: [{ data: [65, 35], backgroundColor: ['#2ecc71', '#333'], borderWidth: 0 }] },
-            options: { rotation: -90, circumference: 180, cutout: '80%', maintainAspectRatio: false }
-        });
-        document.getElementById('gauge-text').innerText = "65%";
-
-        // Historial Semanal
+    function renderUserCharts(resumen) {
+        // Linea Semanal
         new Chart(document.getElementById('chartUserHistorial'), {
             type: 'line',
             data: { 
-                labels: data.map(e => new Date(e.timestamp).toLocaleTimeString()).reverse(),
-                datasets: [{ label: 'Tapitas', data: data.map(e => e.tapitas_estimadas).reverse(), borderColor: '#2ecc71', tension: 0.4 }] 
+                labels: resumen.map(d => d.fecha).reverse(),
+                datasets: [{ label: 'Donaciones', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
             },
             options: { maintainAspectRatio: false }
         });
 
-        // Gráfico Admin Comparativo
+        // Gauge (Ritmo)
+        const hoy = resumen[0]?.total_tapitas || 0;
+        const prom = resumen.reduce((a,b) => a+b.total_tapitas, 0)/resumen.length;
+        const pct = ((hoy/prom)*100).toFixed(0);
+        document.getElementById('gauge-text').innerText = pct + "%";
+        
+        new Chart(document.getElementById('chartGauge'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [hoy, prom > hoy ? prom-hoy : 0], backgroundColor: ['#2ecc71', '#333'], borderWidth: 0 }] },
+            options: { rotation: -90, circumference: 180, cutout: '80%', maintainAspectRatio: false }
+        });
+    }
+
+    function renderAdminCharts() {
         new Chart(document.getElementById('chartAdminComparativo'), {
             type: 'line',
             data: {
-                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                labels: ['S1', 'S2', 'S3', 'S4'],
                 datasets: [
-                    { label: 'Mes Actual', data: [200, 450, 700, 1100], borderColor: '#2ecc71', fill: false },
-                    { label: 'Mes Anterior', data: [150, 400, 600, 900], borderColor: '#6c757d', borderDash: [5,5], fill: false }
+                    { label: 'Mes Actual', data: [300, 600, 850, 1200], borderColor: '#2ecc71', tension: 0.3 },
+                    { label: 'Mes Anterior', data: [250, 500, 700, 950], borderColor: '#6c757d', borderDash: [5,5], tension: 0.3 }
                 ]
             },
             options: { maintainAspectRatio: false }
         });
+    }
 
-        // Heatmap simple
+    function renderHeatmap(eventos) {
         const container = document.getElementById('heatmap-container');
+        container.innerHTML = '';
         for(let i=0; i<28; i++) {
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
@@ -242,11 +242,12 @@
     }
 
     function actualizarTablaAdmin(data) {
-        document.getElementById('admin-table-body').innerHTML = data.map(e => `
+        document.getElementById('admin-table-body').innerHTML = data.slice(0,10).map(e => `
             <tr>
-                <td>${new Date(e.timestamp).toLocaleTimeString()}</td>
+                <td>${new Date(e.timestamp).toLocaleString()}</td>
                 <td>${e.peso_delta_g}g</td>
                 <td>${e.tapitas_estimadas}</td>
+                <td>${e.nivel_pct}%</td>
                 <td>${e.robot_id}</td>
             </tr>
         `).join('');
@@ -260,8 +261,8 @@
                 badge.innerText = role.toUpperCase();
                 if (role === 'admin') {
                     badge.classList.add('admin-active');
-                    document.getElementById('admin-view').style.display = 'flex';
-                    document.getElementById('user-view').style.display = 'none';
+                    document.getElementById('admin-view').classList.remove('admin-only');
+                    document.getElementById('user-view').classList.add('admin-only');
                 }
                 document.getElementById('btn-show-login').classList.add('d-none');
                 document.getElementById('btn-logout').classList.remove('d-none');
@@ -282,7 +283,18 @@
         };
     }
 
+    function exportarCSV() {
+        let csv = "Fecha,Gramos,Tapitas\n";
+        datosEventos.forEach(e => csv += `${e.timestamp},${e.peso_delta_g},${e.tapitas_estimadas}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'reporte_robotcap.csv';
+        a.click();
+    }
+
     init();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
