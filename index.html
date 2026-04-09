@@ -134,18 +134,18 @@
     <div class="row g-3 mb-4 text-center">
         <div class="col-md-4">
             <div class="card border-0 h-100">
-                <div class="card-header-custom">TOTAL TAPITAS</div>
+                <div class="card-header-custom">TOTAL HISTÓRICO DE TAPITAS</div>
                 <div class="card-body py-4"><h2 id="stat-tapitas" class="fw-bold m-0 text-success">0</h2></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card border-0 h-100">
-                <div class="card-header-custom">PESO ACUMULADO</div>
+                <div class="card-header-custom">PESO ACUMULADO ACTUAL</div>
                 <div class="card-body py-4"><h2 id="stat-peso" class="fw-bold m-0 text-success">0g</h2></div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 h-100">
+            <div class="card border-0 h-100" id="card-nivel" data-bs-toggle="tooltip" data-bs-placement="top" title="Cargando total actual...">
                 <div class="card-header-custom">NIVEL CONTENEDOR: <span id="fill-pct">0%</span></div>
                 <div class="card-body py-4 px-4">
                     <div class="progress" style="height: 20px; background-color: rgba(128,128,128,0.2); border-radius: 10px;">
@@ -305,9 +305,18 @@
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let datosEventos = [];
+    let tooltipNivel;
 
     async function init() {
         gestionarTema();
+        
+        // Inicializar tooltips de Bootstrap
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        tooltipNivel = bootstrap.Tooltip.getInstance(document.getElementById('card-nivel'));
+
         await cargarDatos();
         configurarAuth();
         configurarInsercionManual();
@@ -374,7 +383,6 @@
                 const objetivo = 50;
                 const tapitasHoy = resumen[0].total_tapitas;
                 const ritmo = Math.round((tapitasHoy / objetivo) * 100);
-                // Pasar tapitasHoy para el tooltip
                 renderGaugeChart(ritmo, tapitasHoy);
             }
 
@@ -389,6 +397,12 @@
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
+                // ACTUALIZACIÓN CAMBIO 3: Tooltip dinámico con tapitas actuales
+                if(tooltipNivel) {
+                    const cardNivel = document.getElementById('card-nivel');
+                    cardNivel.setAttribute('data-bs-original-title', `Total actual: ${ultimo.tapitas_estimadas} tapitas`);
+                }
+
                 const pb = document.getElementById('progress-bar');
                 pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
                                (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
