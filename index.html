@@ -49,7 +49,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- CAMBIO 1: Reducción del tamaño del badge de llenado --- */
         .badge-llenado {
             min-width: 80px;
             padding: 4px 10px !important;
@@ -71,7 +70,15 @@
         .user-only { display: flex !important; } 
 
         .h-large { height: 320px; }
-        .h-gauge { height: 180px; margin-bottom: -10px; }
+        
+        /* Ajuste para centrar el Gauge */
+        .h-gauge { 
+            height: 200px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
         
         .progress-bar-animated-custom {
             animation: progress-bar-stripes 1s linear infinite, pulse-green 2s infinite;
@@ -262,9 +269,9 @@
         <div class="col-md-5">
             <div class="card h-100">
                 <div class="card-header-custom">🚀 Ritmo de Donación Diario</div>
-                <div class="card-body text-center">
-                    <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
-                    <h2 id="gauge-text" class="fw-bold text-success mb-0">0%</h2>
+                <div class="card-body text-center d-flex flex-column align-items-center justify-content-center">
+                    <div class="h-gauge w-100"><canvas id="chartGauge"></canvas></div>
+                    <h2 id="gauge-text" class="fw-bold text-success mb-0 mt-2">0%</h2>
                     <p class="text-muted small mt-1">Objetivo: 50 tapitas/día</p>
                 </div>
             </div>
@@ -365,8 +372,10 @@
                 renderUserCharts(resumen);
 
                 const objetivo = 50;
-                const ritmo = Math.round((resumen[0].total_tapitas / objetivo) * 100);
-                renderGaugeChart(ritmo);
+                const tapitasHoy = resumen[0].total_tapitas;
+                const ritmo = Math.round((tapitasHoy / objetivo) * 100);
+                // Pasar tapitasHoy para el tooltip
+                renderGaugeChart(ritmo, tapitasHoy);
             }
 
             const { data: eventos } = await _supabase.from('eventos_insercion')
@@ -393,7 +402,7 @@
         }
     }
 
-    function renderGaugeChart(valor) {
+    function renderGaugeChart(valor, tapitasActuales) {
         const ctx = document.getElementById('chartGauge');
         if(!ctx) return;
         if(window.gaugeChart) window.gaugeChart.destroy();
@@ -402,6 +411,7 @@
         window.gaugeChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
+                labels: ['Completado', 'Restante'],
                 datasets: [{
                     data: [Math.min(valor, 100), Math.max(0, 100 - valor)],
                     backgroundColor: [color, 'rgba(128,128,128,0.1)'],
@@ -412,8 +422,25 @@
                 rotation: -90,
                 circumference: 180,
                 cutout: '80%',
-                plugins: { tooltip: { enabled: false } },
-                maintainAspectRatio: false
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { bottom: 10 }
+                },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { 
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataIndex === 0) {
+                                    return ` Recolectadas: ${tapitasActuales} tapitas (${valor}%)`;
+                                }
+                                return ` Falta: ${Math.max(0, 50 - tapitasActuales)} para el objetivo`;
+                            }
+                        }
+                    } 
+                }
             }
         });
         document.getElementById('gauge-text').innerText = valor + "%";
@@ -538,22 +565,16 @@
                 badge.innerText = "ADMINISTRADOR";
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
-                
-                /* CAMBIO 2: Al ser Admin, se ocultan las gráficas de usuario */
                 userView.classList.add('d-none'); 
                 userView.classList.remove('user-only');
-
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
-                
-                /* Mostrar gráficas de usuario si no es admin */
                 userView.classList.remove('d-none');
                 userView.classList.add('user-only');
-
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
