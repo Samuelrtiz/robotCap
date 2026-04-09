@@ -13,7 +13,7 @@
 
     <style>
         :root { 
-            --robot-green: #198754; 
+            --robot-green: #198754;
             --robot-accent: #2ecc71;
             --navbar-bg: #2ecc71;
             --navbar-text: #000000;
@@ -24,7 +24,7 @@
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
         .card { 
-            border-radius: 16px; 
+            border-radius: 16px;
             overflow: hidden; 
             border: 1px solid rgba(128,128,128,0.1); 
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -40,7 +40,7 @@
         }
 
         .card-header-custom { 
-            background-color: var(--robot-green) !important; 
+            background-color: var(--robot-green) !important;
             color: white !important; 
             padding: 12px 15px;
             font-weight: 600;
@@ -72,7 +72,7 @@
         .h-large { height: 320px; }
         
         .h-gauge { 
-            height: 200px; 
+            height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -91,7 +91,7 @@
 
         .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .heatmap-cell { 
-            aspect-ratio: 1; 
+            aspect-ratio: 1;
             border-radius: 6px; 
             background-color: var(--robot-accent); 
             cursor: pointer; 
@@ -144,7 +144,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 h-100" id="card-nivel" data-bs-toggle="tooltip" data-bs-placement="top" title="Cargando total actual...">
+            <div class="card border-0 h-100" id="card-nivel" data-bs-toggle="tooltip" data-bs-placement="top" title="Cargando datos...">
                 <div class="card-header-custom">NIVEL CONTENEDOR: <span id="fill-pct">0%</span></div>
                 <div class="card-body py-4 px-4">
                     <div class="progress" style="height: 20px; background-color: rgba(128,128,128,0.2); border-radius: 10px;">
@@ -158,11 +158,21 @@
     <div id="admin-view" class="row g-4 admin-only mb-4">
         <div class="col-12">
             <div class="admin-toolbar shadow-sm">
-                <div class="row g-2">
+                <div class="row g-2 mb-3">
                     <div class="col-md-3"><button class="btn btn-primary btn-action w-100" onclick="toggleInsertPanel()">➕ Nueva Inserción</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="generarPDF()">📄 Reporte PDF</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100" onclick="location.reload()">🔄 Sincronizar</button></div>
                     <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100" id="btn-reset-db" onclick="resetearSistema()">🧹 Reset Sistema</button></div>
+                </div>
+                <div class="row g-2 border-top pt-2">
+                    <div class="col-md-6">
+                        <small class="text-muted fw-bold">📅 ÚLTIMO RESET:</small> 
+                        <span id="label-last-reset" class="small ms-2">Nunca</span>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-muted fw-bold">📄 ÚLTIMO REPORTE PDF:</small> 
+                        <span id="label-last-pdf" class="small ms-2">Nunca</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -310,11 +320,17 @@
 
     async function init() {
         gestionarTema();
+        
+        // Inicializar tooltips de Bootstrap
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         tooltipNivel = bootstrap.Tooltip.getInstance(document.getElementById('card-nivel'));
+
+        // Cargar fechas guardadas (Reset y PDF)
+        document.getElementById('label-last-reset').innerText = localStorage.getItem('lastReset') || "Nunca";
+        document.getElementById('label-last-pdf').innerText = localStorage.getItem('lastPDF') || "Nunca";
 
         await cargarDatos();
         configurarAuth();
@@ -322,7 +338,6 @@
         setInterval(cargarDatos, 30000);
     }
 
-    // --- NUEVA FUNCIÓN DE RESETEO ---
     async function resetearSistema() {
         const confirm1 = confirm("⚠️ ¡ATENCIÓN! ¿Estás seguro de que deseas borrar TODOS los registros de recolección? Esta acción no se puede deshacer.");
         if (!confirm1) return;
@@ -335,23 +350,26 @@
         btn.innerText = "Limpiando...";
 
         try {
-            // Borramos todos los registros (usando un filtro que siempre es cierto para habilitar el DELETE masivo si las RLS lo permiten)
             const { error } = await _supabase
                 .from('eventos_insercion')
                 .delete()
-                .neq('robot_id', 'RESERVED_VOID_ID'); // Filtro dummy para permitir borrado masivo
+                .neq('robot_id', 'RESERVED_VOID_ID'); 
 
             if (error) {
                 alert("Error al resetear: " + error.message);
             } else {
+                // Actualizar y guardar fecha de reset
+                const now = new Date().toLocaleString();
+                localStorage.setItem('lastReset', now);
+                document.getElementById('label-last-reset').innerText = now;
+
                 alert("✅ Sistema reseteado con éxito.");
-                // Forzar limpieza visual inmediata
                 ultimoPesoRegistrado = 0;
                 document.getElementById('stat-tapitas').innerText = "0";
                 document.getElementById('stat-peso').innerText = "0g";
                 document.getElementById('fill-pct').innerText = "0%";
                 document.getElementById('progress-bar').style.width = "0%";
-                await cargarDatos(); 
+                await cargarDatos();
             }
         } catch (err) {
             console.error(err);
@@ -383,7 +401,6 @@
         if(!form) return;
         form.onsubmit = async (e) => {
             e.preventDefault();
-            
             const gramos = parseFloat(document.getElementById('m-gramos').value);
             const pesoIngresado = parseFloat(document.getElementById('m-nivel').value);
             
@@ -435,13 +452,11 @@
                 document.getElementById('stat-tapitas').innerText = totalTapitas.toLocaleString();
                 document.getElementById('stat-peso').innerText = totalGramos.toFixed(0) + "g";
                 renderUserCharts(resumen);
-
                 const objetivo = 50;
                 const tapitasHoy = resumen[0].total_tapitas;
                 const ritmo = Math.round((tapitasHoy / objetivo) * 100);
                 renderGaugeChart(ritmo, tapitasHoy);
             } else {
-                // Si no hay datos (tras un reset)
                 document.getElementById('stat-tapitas').innerText = "0";
                 document.getElementById('stat-peso').innerText = "0g";
             }
@@ -459,20 +474,19 @@
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
+                // CAMBIO 1: El tooltip ahora muestra la última cantidad introducida [cite: 273]
                 if(tooltipNivel) {
                     const cardNivel = document.getElementById('card-nivel');
-                    cardNivel.setAttribute('data-bs-original-title', `Total actual: ${ultimo.tapitas_estimadas} tapitas`);
+                    cardNivel.setAttribute('data-bs-original-title', `Última cantidad de tapitas introducidas: ${ultimo.tapitas_estimadas}`);
                 }
 
                 const pb = document.getElementById('progress-bar');
                 pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
                                (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
-
                 actualizarTablaAdmin(eventos);
                 renderAdminCharts();
                 renderHeatmap();
             } else {
-                // Estado vacío tras reset
                 datosEventos = [];
                 ultimoPesoRegistrado = 0;
                 document.getElementById('fill-pct').innerText = "0%";
@@ -535,7 +549,7 @@
             d.className = 'heatmap-cell';
             const data = datosEventos[i];
             if (data) {
-                const intensidad = Math.min(data.tapitas_estimadas / 15, 1); 
+                const intensidad = Math.min(data.tapitas_estimadas / 15, 1);
                 d.style.backgroundColor = 'var(--robot-accent)';
                 d.style.opacity = intensidad + 0.1;
                 d.title = `${new Date(data.timestamp).toLocaleString()}\nTapitas: ${data.tapitas_estimadas}`;
@@ -658,7 +672,6 @@
                 btnLogin.classList.remove('d-none');
             }
         });
-
         document.getElementById('btn-do-login').onclick = async () => {
             const email = document.getElementById('in-email').value;
             const password = document.getElementById('in-pass').value;
@@ -670,9 +683,8 @@
                 if(modal) modal.hide();
             }
         };
-
         document.getElementById('btn-logout').onclick = async () => { 
-            await _supabase.auth.signOut(); 
+            await _supabase.auth.signOut();
             location.reload(); 
         };
     }
@@ -683,7 +695,14 @@
         doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
         doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
         doc.setFontSize(10); doc.setTextColor(100);
-        doc.text("Generado el: " + new Date().toLocaleString(), 14, 28);
+        
+        const now = new Date().toLocaleString();
+        doc.text("Generado el: " + now, 14, 28);
+        
+        // CAMBIO 3: Actualizar fecha de reporte PDF [cite: 322]
+        localStorage.setItem('lastPDF', now);
+        document.getElementById('label-last-pdf').innerText = now;
+
         const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
         doc.autoTable({ startY: 35, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
         doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
