@@ -124,35 +124,7 @@
         </div>
     </div>
 
-    <div id="user-view" class="row g-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header-custom">📅 Historial de Recolección Semanal</div>
-                <div class="card-body-custom h-large"><canvas id="chartUserHistorial"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="card">
-                <div class="card-header-custom">🔥 Mapa de Calor: Actividad</div>
-                <div class="card-body-custom">
-                    <div id="heatmap-container" class="heatmap-grid mb-2"></div>
-                    <div class="d-flex justify-content-between small text-muted"><span>Lunes</span><span>Domingo</span></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header-custom">🚀 Ritmo de Donación Diario</div>
-                <div class="card-body-custom text-center">
-                    <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
-                    <h4 id="gauge-text" class="fw-bold text-success">0%</h4>
-                    <small class="text-muted">vs. Promedio histórico</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="admin-view" class="row g-4 admin-only">
+    <div id="admin-view" class="row g-4 admin-only mb-4">
         <div class="col-12">
             <div class="admin-toolbar">
                 <div class="row g-2">
@@ -243,6 +215,34 @@
         </div>
     </div>
 
+    <div id="user-view" class="row g-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header-custom">📅 Historial de Recolección Semanal</div>
+                <div class="card-body-custom h-large"><canvas id="chartUserHistorial"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header-custom">🔥 Mapa de Calor: Actividad</div>
+                <div class="card-body-custom">
+                    <div id="heatmap-container" class="heatmap-grid mb-2"></div>
+                    <div class="d-flex justify-content-between small text-muted"><span>Lunes</span><span>Domingo</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header-custom">🚀 Ritmo de Donación Diario</div>
+                <div class="card-body-custom text-center">
+                    <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
+                    <h4 id="gauge-text" class="fw-bold text-success">0%</h4>
+                    <small class="text-muted">vs. Promedio histórico</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="text-center">
         <p class="disclaimer mb-2">
             © 2026 RobotCap Project | <strong>Fundación Amigos Contra el Cáncer Infantil (FACCI)</strong> <br>
@@ -291,7 +291,6 @@
             const pesoTotalActual = parseFloat(document.getElementById('m-nivel').value);
             const robotId = document.getElementById('m-robot').value;
             
-            // Calculamos el % basado en un límite de 3000g (ajustable)
             const nivelPct = Math.min(Math.round((pesoTotalActual / 3000) * 100), 100);
 
             const { error } = await _supabase.from('eventos_insercion').insert([
@@ -310,12 +309,11 @@
                 alert("✅ Datos insertados correctamente");
                 document.getElementById('form-manual-insert').reset();
                 toggleInsertPanel();
-                await cargarDatos(); // Recargar todo para ver cambios
+                await cargarDatos(); 
             }
         };
     }
 
-    // Funciones de Reporte y Exportación
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -358,10 +356,11 @@
     }
 
     function actualizarTablaAdmin(data) {
-        document.getElementById('admin-table-body').innerHTML = data.slice(0,10).map(e => {
+        const body = document.getElementById('admin-table-body');
+        if (!body) return;
+        body.innerHTML = data.slice(0,10).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
             let label = e.nivel_pct > 85 ? "CRÍTICO" : (e.nivel_pct > 60 ? "Medio" : "Bajo");
-
             return `
                 <tr>
                     <td>${new Date(e.timestamp).toLocaleString()}</td>
@@ -378,7 +377,6 @@
         }).join('');
     }
 
-    // Charts y UI
     function renderUserCharts(resumen) {
         const ctx = document.getElementById('chartUserHistorial');
         if(window.userChart) window.userChart.destroy();
@@ -394,6 +392,7 @@
 
     function renderAdminCharts() {
         const ctx = document.getElementById('chartAdminComparativo');
+        if (!ctx) return;
         if(window.adminChart) window.adminChart.destroy();
         window.adminChart = new Chart(ctx, {
             type: 'line',
@@ -425,22 +424,19 @@
         _supabase.auth.onAuthStateChange((event, session) => {
             const badge = document.getElementById('user-role');
             const adminView = document.getElementById('admin-view');
-            const userView = document.getElementById('user-view');
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
 
             if (session) {
                 badge.innerText = "ADMIN";
                 badge.classList.add('admin-active');
-                adminView.classList.remove('admin-only');
-                userView.classList.add('admin-only');
+                adminView.classList.remove('admin-only'); // Muestra panel admin
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
-                adminView.classList.add('admin-only');
-                userView.classList.remove('admin-only');
+                adminView.classList.add('admin-only'); // Oculta panel admin
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
