@@ -50,6 +50,13 @@
         }
         .card-body-custom { padding: 20px; }
 
+        /* --- MEJORA: Tamaño Estado Llenado (+50%) --- */
+        .badge-llenado {
+            min-width: 135px; /* Aumentado de 90px */
+            padding: 12px 18px !important; /* Aumentado de 8px 12px */
+            font-size: 1.1rem !important; /* Aumentado de 0.75rem aprox */
+        }
+
         .theme-switch { width: 50px; height: 24px; background: #333; border-radius: 20px; position: relative; cursor: pointer; border: 1px solid #555; }
         .theme-switch .dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 3px; transition: 0.3s; }
         [data-bs-theme="light"] .theme-switch { background: #ced4da; }
@@ -59,6 +66,8 @@
         #user-role.badge.admin-active { background-color: #0d6efd !important; }
 
         .admin-only { display: none !important; }
+        .user-only { display: flex !important; } /* Clase controlada por JS */
+
         .h-large { height: 320px; }
         .h-gauge { height: 180px; margin-bottom: -10px; }
         
@@ -92,7 +101,7 @@
 
         .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
         .table-mini { font-size: 0.75rem; }
-        .table-mini td { vertical-align: middle !important; padding: 10px 8px; }
+        .table-mini td { vertical-align: middle !important; padding: 12px 8px; }
 
         footer { border-top: 1px solid rgba(128,128,128,0.2); padding: 2rem 0; margin-top: 3rem; background: rgba(0,0,0,0.02); }
         .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; line-height: 1.6; }
@@ -229,7 +238,7 @@
         </div>
     </div>
 
-    <div id="user-view" class="row g-4">
+    <div id="user-view" class="row g-4 user-only">
         <div class="col-12">
             <div class="card">
                 <div class="card-header-custom">📅 Historial de Recolección (7 días)</div>
@@ -283,7 +292,6 @@
 </div>
 
 <script>
-    // NOTA: En producción, usa variables de entorno para la KEY
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -294,8 +302,6 @@
         await cargarDatos();
         configurarAuth();
         configurarInsercionManual();
-        
-        // Auto-refresh cada 30 segundos
         setInterval(cargarDatos, 30000);
     }
 
@@ -343,7 +349,6 @@
 
     async function cargarDatos() {
         try {
-            // 1. Cargar Resumen Diario
             const { data: resumen } = await _supabase.from('resumen_diario')
                 .select('*')
                 .order('fecha', { ascending: false })
@@ -362,7 +367,6 @@
                 renderGaugeChart(ritmo);
             }
 
-            // 2. Cargar Eventos Individuales
             const { data: eventos } = await _supabase.from('eventos_insercion')
                 .select('*')
                 .order('timestamp', { ascending: false })
@@ -374,7 +378,6 @@
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
-                // Actualizar color de barra según nivel
                 const pb = document.getElementById('progress-bar');
                 pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
                                (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
@@ -419,13 +422,10 @@
         const container = document.getElementById('heatmap-container');
         if(!container) return;
         container.innerHTML = '';
-        
-        // Siempre mostrar 28 slots (4 semanas de actividad visual)
         for(let i = 27; i >= 0; i--) {
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
             const data = datosEventos[i];
-            
             if (data) {
                 const intensidad = Math.min(data.tapitas_estimadas / 15, 1); 
                 d.style.backgroundColor = 'var(--robot-accent)';
@@ -442,13 +442,14 @@
         body.innerHTML = data.slice(0,12).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
             let label = e.nivel_pct > 85 ? "CRÍTICO" : (e.nivel_pct > 60 ? "Medio" : "Bajo");
+            // APLICACIÓN DE CLASE .badge-llenado (+50% tamaño)
             return `
                 <tr>
                     <td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td>
                     <td>${e.peso_delta_g}g</td>
-                    <td><span class="badge bg-light text-dark">${e.tapitas_estimadas}</span></td>
+                    <td><span class="badge bg-light text-dark px-3 py-2" style="font-size:0.9rem">${e.tapitas_estimadas}</span></td>
                     <td>
-                        <span class="badge ${badgeClass}" style="min-width: 90px;">
+                        <span class="badge ${badgeClass} badge-llenado">
                             ${e.nivel_pct}% - ${label}
                         </span>
                     </td>
@@ -462,12 +463,10 @@
         const ctx = document.getElementById('chartUserHistorial');
         if(!ctx) return;
         if(window.userChart) window.userChart.destroy();
-        
         const labels = resumen.map(d => {
             const date = new Date(d.fecha + "T00:00:00");
             return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
         }).reverse();
-
         window.userChart = new Chart(ctx, {
             type: 'line',
             data: { 
@@ -521,7 +520,6 @@
             document.documentElement.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
         };
-        
         const savedTheme = localStorage.getItem('theme');
         if(savedTheme) document.documentElement.setAttribute('data-bs-theme', savedTheme);
     }
@@ -530,6 +528,7 @@
         _supabase.auth.onAuthStateChange((event, session) => {
             const badge = document.getElementById('user-role');
             const adminView = document.getElementById('admin-view');
+            const userView = document.getElementById('user-view'); // Vista usuario
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
 
@@ -537,12 +536,16 @@
                 badge.innerText = "ADMINISTRADOR";
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
+                userView.classList.remove('user-only'); // OCULTAR GRAFICAS USUARIO
+                userView.style.display = 'none';
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
+                userView.classList.add('user-only'); // MOSTRAR GRAFICAS USUARIO
+                userView.style.display = 'flex';
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
@@ -569,35 +572,15 @@
         doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
         doc.setFontSize(10); doc.setTextColor(100);
         doc.text("Generado el: " + new Date().toLocaleString(), 14, 28);
-        
-        const rows = datosEventos.map(e => [
-            new Date(e.timestamp).toLocaleString(), 
-            e.peso_delta_g+"g", 
-            e.tapitas_estimadas, 
-            e.nivel_pct+"%", 
-            e.robot_id
-        ]);
-        
-        doc.autoTable({ 
-            startY: 35, 
-            head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], 
-            body: rows, 
-            theme: 'grid', 
-            headStyles: { fillColor: [25, 135, 84] } 
-        });
+        const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
+        doc.autoTable({ startY: 35, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
         doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
     }
 
     function exportarCSV() {
         if (datosEventos.length === 0) return;
         const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
-        const filas = datosEventos.map(e => [
-            `"${new Date(e.timestamp).toLocaleString()}"`, 
-            `"${e.peso_delta_g}"`, 
-            e.tapitas_estimadas, 
-            e.nivel_pct, 
-            e.robot_id
-        ]);
+        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}"`, e.tapitas_estimadas, e.nivel_pct, e.robot_id]);
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csvContent));
@@ -605,7 +588,6 @@
         link.click();
     }
 
-    // Ejecutar al cargar
     document.addEventListener('DOMContentLoaded', init);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
