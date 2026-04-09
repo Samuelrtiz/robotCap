@@ -320,15 +320,12 @@
 
     async function init() {
         gestionarTema();
-        
-        // Inicializar tooltips de Bootstrap
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         tooltipNivel = bootstrap.Tooltip.getInstance(document.getElementById('card-nivel'));
 
-        // Cargar fechas guardadas (Reset y PDF)
         document.getElementById('label-last-reset').innerText = localStorage.getItem('lastReset') || "Nunca";
         document.getElementById('label-last-pdf').innerText = localStorage.getItem('lastPDF') || "Nunca";
 
@@ -341,34 +338,27 @@
     async function resetearSistema() {
         const confirm1 = confirm("⚠️ ¡ATENCIÓN! ¿Estás seguro de que deseas borrar TODOS los registros de recolección? Esta acción no se puede deshacer.");
         if (!confirm1) return;
-
         const confirm2 = confirm("¿Realmente deseas vaciar la base de datos de eventos? Los gráficos volverán a cero.");
         if (!confirm2) return;
 
         const btn = document.getElementById('btn-reset-db');
         btn.disabled = true;
         btn.innerText = "Limpiando...";
-
         try {
-            const { error } = await _supabase
-                .from('eventos_insercion')
-                .delete()
-                .neq('robot_id', 'RESERVED_VOID_ID'); 
-
+            const { error } = await _supabase.from('eventos_insercion').delete().neq('robot_id', 'RESERVED_VOID_ID');
             if (error) {
                 alert("Error al resetear: " + error.message);
             } else {
                 const now = new Date().toLocaleString();
                 localStorage.setItem('lastReset', now);
                 document.getElementById('label-last-reset').innerText = now;
-
                 alert("✅ Sistema reseteado con éxito.");
                 ultimoPesoRegistrado = 0;
                 document.getElementById('stat-tapitas').innerText = "0";
                 document.getElementById('stat-peso').innerText = "0g";
                 document.getElementById('fill-pct').innerText = "0%";
                 document.getElementById('progress-bar').style.width = "0%";
-                await cargarDatos(); 
+                await cargarDatos();
             }
         } catch (err) {
             console.error(err);
@@ -396,7 +386,6 @@
             const delta = parseFloat(inputGramos.value) || 0;
             inputNivel.value = ultimoPesoRegistrado + delta;
         });
-
         if(!form) return;
         form.onsubmit = async (e) => {
             e.preventDefault();
@@ -404,7 +393,7 @@
             const pesoIngresado = parseFloat(document.getElementById('m-nivel').value);
             
             if (pesoIngresado < ultimoPesoRegistrado) {
-                const confirmar = confirm(`El peso ingresado (${pesoIngresado}g) es menor al anterior (${ultimoPesoRegistrado}g). ¿Deseas reducir el peso actual del contenedor? (Ej: Tras un vaciado)`);
+                const confirmar = confirm(`El peso ingresado (${pesoIngresado}g) es menor al anterior (${ultimoPesoRegistrado}g). ¿Deseas reducir el peso actual del contenedor?`);
                 if (!confirmar) return;
             }
 
@@ -425,7 +414,6 @@
                     timestamp: new Date().toISOString()
                 }
             ]);
-
             if (error) alert("Error: " + error.message);
             else {
                 form.reset();
@@ -439,18 +427,13 @@
 
     async function cargarDatos() {
         try {
-            const { data: resumen } = await _supabase.from('resumen_diario')
-                .select('*')
-                .order('fecha', { ascending: false })
-                .limit(7);
-
+            const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
             if (resumen && resumen.length > 0) {
                 const totalTapitas = resumen.reduce((a, b) => a + b.total_tapitas, 0);
                 const totalGramos = resumen.reduce((a, b) => a + b.total_gramos, 0);
                 document.getElementById('stat-tapitas').innerText = totalTapitas.toLocaleString();
                 document.getElementById('stat-peso').innerText = totalGramos.toFixed(0) + "g";
                 renderUserCharts(resumen);
-
                 const objetivo = 50;
                 const tapitasHoy = resumen[0].total_tapitas;
                 const ritmo = Math.round((tapitasHoy / objetivo) * 100);
@@ -460,16 +443,11 @@
                 document.getElementById('stat-peso').innerText = "0g";
             }
 
-            const { data: eventos } = await _supabase.from('eventos_insercion')
-                .select('*')
-                .order('timestamp', { ascending: false })
-                .limit(50);
-
+            const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
             if (eventos && eventos.length > 0) {
                 datosEventos = eventos;
                 const ultimo = eventos[0];
                 ultimoPesoRegistrado = (ultimo.nivel_pct / 100) * 3000;
-
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
@@ -481,7 +459,6 @@
                 const pb = document.getElementById('progress-bar');
                 pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
                                (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
-
                 actualizarTablaAdmin(eventos);
                 renderAdminCharts();
                 renderHeatmap();
@@ -493,16 +470,13 @@
                 const body = document.getElementById('admin-table-body');
                 if(body) body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin registros</td></tr>';
             }
-        } catch (err) {
-            console.error("Error cargando datos:", err);
-        }
+        } catch (err) { console.error("Error cargando datos:", err); }
     }
 
     function renderGaugeChart(valor, tapitasActuales) {
         const ctx = document.getElementById('chartGauge');
         if(!ctx) return;
         if(window.gaugeChart) window.gaugeChart.destroy();
-        
         const color = valor >= 100 ? '#2ecc71' : (valor > 50 ? '#f1c40f' : '#e67e22');
         window.gaugeChart = new Chart(ctx, {
             type: 'doughnut',
@@ -515,7 +489,11 @@
                 }]
             },
             options: {
-                rotation: -90, circumference: 180, cutout: '80%', responsive: true, maintainAspectRatio: false,
+                rotation: -90,
+                circumference: 180,
+                cutout: '80%',
+                responsive: true,
+                maintainAspectRatio: false,
                 layout: { padding: { bottom: 10 } },
                 plugins: { 
                     legend: { display: false },
@@ -535,23 +513,46 @@
         document.getElementById('gauge-text').className = `fw-bold mb-0 text-${valor >= 100 ? 'success' : (valor > 50 ? 'warning' : 'danger')}`;
     }
 
-    // CORRECCIÓN APLICADA AQUÍ: Se asegura que el title (tooltip nativo) funcione siempre 
+    // --- FUNCIÓN ACTUALIZADA: RENDERHEATMAP CON TOOLTIP TIPO GAUCH CHART ---
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
         if(!container) return;
+        
+        // Limpieza de tooltips previos para evitar duplicidad
+        const cells = container.querySelectorAll('.heatmap-cell');
+        cells.forEach(c => {
+            const t = bootstrap.Tooltip.getInstance(c);
+            if(t) t.dispose();
+        });
+        
         container.innerHTML = '';
-        // Invertimos el bucle para mostrar el evento más reciente al final de la cuadrícula
         for(let i = 27; i >= 0; i--) {
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
             const data = datosEventos[i];
+            
             if (data) {
-                // Cálculo de intensidad visual [cite: 300]
                 const intensidad = Math.min(data.tapitas_estimadas / 15, 1);
                 d.style.backgroundColor = 'var(--robot-accent)';
                 d.style.opacity = intensidad + 0.1;
-                // Tooltip nativo: funciona correctamente al colocar el mouse encima [cite: 301]
-                d.title = `Fecha: ${new Date(data.timestamp).toLocaleString()}\nTapitas: ${data.tapitas_estimadas}`;
+
+                // Configuración de Tooltip estilo Bootstrap (similar al de los gráficos)
+                d.setAttribute('data-bs-toggle', 'tooltip');
+                d.setAttribute('data-bs-html', 'true');
+                d.setAttribute('data-bs-placement', 'top');
+                
+                const fecha = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const dia = new Date(data.timestamp).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                
+                const tooltipHtml = `
+                    <div class="text-center p-1">
+                        <small class="d-block text-uppercase fw-bold border-bottom mb-1 pb-1" style="font-size: 0.65rem; opacity: 0.8;">${dia}</small>
+                        <span class="fs-6 fw-bold text-success">${data.tapitas_estimadas} tapitas</span><br>
+                        <small class="opacity-75" style="font-size: 0.7rem;">Evento a las ${fecha}</small>
+                    </div>
+                `;
+                d.setAttribute('title', tooltipHtml);
+                new bootstrap.Tooltip(d); // Inicialización individual
             }
             container.appendChild(d);
         }
@@ -563,17 +564,7 @@
         body.innerHTML = data.slice(0,12).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
             let label = e.nivel_pct > 85 ? "LLENO" : (e.nivel_pct > 60 ? "MEDIO" : "BAJO");
-            return `
-                <tr>
-                    <td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td>
-                    <td>${e.peso_delta_g}g</td>
-                    <td><span class="badge bg-light text-dark px-3 py-2" style="font-size:0.9rem">${e.tapitas_estimadas}</span></td>
-                    <td class="text-center">
-                        <span class="badge ${badgeClass} badge-llenado">${e.nivel_pct}% - ${label}</span>
-                    </td>
-                    <td class="text-muted">${e.robot_id}</td>
-                </tr>
-            `;
+            return `<tr><td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td><td>${e.peso_delta_g}g</td><td><span class="badge bg-light text-dark px-3 py-2" style="font-size:0.9rem">${e.tapitas_estimadas}</span></td><td class="text-center"><span class="badge ${badgeClass} badge-llenado">${e.nivel_pct}% - ${label}</span></td><td class="text-muted">${e.robot_id}</td></tr>`;
         }).join('');
     }
 
@@ -592,10 +583,12 @@
                 datasets: [{ 
                     label: 'Tapitas', 
                     data: resumen.map(d => d.total_tapitas).reverse(), 
-                    borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#2ecc71'
+                    borderColor: '#2ecc71', 
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)', 
+                    fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#2ecc71'
                 }] 
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' } }, x: { grid: { display: false } } } }
         });
     }
 
@@ -605,11 +598,8 @@
         if(window.adminChart) window.adminChart.destroy();
         window.adminChart = new Chart(ctx, {
             type: 'bar',
-            data: { 
-                labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'], 
-                datasets: [{ label: 'Tapitas Recolectadas', data: [450, 620, 810, 1100], backgroundColor: '#198754', borderRadius: 5 }] 
-            },
-            options: { maintainAspectRatio: false }
+            data: { labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'], datasets: [{ label: 'Tapitas Recolectadas', data: [450, 620, 810, 1100], backgroundColor: '#198754', borderRadius: 5 }] },
+            options: { maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' } } } }
         });
     }
 
@@ -632,37 +622,42 @@
             const userView = document.getElementById('user-view'); 
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
-
             if (session) {
-                badge.innerText = "ADMINISTRADOR"; badge.classList.add('admin-active');
-                adminView.classList.remove('admin-only'); userView.classList.add('d-none'); userView.classList.remove('user-only');
-                btnLogout.classList.remove('d-none'); btnLogin.classList.add('d-none');
+                badge.innerText = "ADMINISTRADOR";
+                badge.classList.add('admin-active');
+                adminView.classList.remove('admin-only');
+                userView.classList.add('d-none'); 
+                userView.classList.remove('user-only');
+                btnLogout.classList.remove('d-none');
+                btnLogin.classList.add('d-none');
             } else {
-                badge.innerText = "Invitado"; badge.classList.remove('admin-active');
-                adminView.classList.add('admin-only'); userView.classList.remove('d-none'); userView.classList.add('user-only');
-                btnLogout.classList.add('d-none'); btnLogin.classList.remove('d-none');
+                badge.innerText = "Invitado";
+                badge.classList.remove('admin-active');
+                adminView.classList.add('admin-only');
+                userView.classList.remove('d-none');
+                userView.classList.add('user-only');
+                btnLogout.classList.add('d-none');
+                btnLogin.classList.remove('d-none');
             }
         });
-
         document.getElementById('btn-do-login').onclick = async () => {
             const email = document.getElementById('in-email').value;
             const password = document.getElementById('in-pass').value;
             const { error } = await _supabase.auth.signInWithPassword({ email, password });
             if (error) alert("Credenciales incorrectas");
             else {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                const modalEl = document.getElementById('loginModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
                 if(modal) modal.hide();
             }
         };
-
         document.getElementById('btn-logout').onclick = async () => { await _supabase.auth.signOut(); location.reload(); };
     }
 
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
-        doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
+        doc.setFontSize(18); doc.setTextColor(25, 135, 84); doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
         doc.setFontSize(10); doc.setTextColor(100);
         const now = new Date().toLocaleString();
         doc.text("Generado el: " + now, 14, 28);
