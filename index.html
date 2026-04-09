@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RobotCap v4.0 | Dashboard FACCI</title>
+    <title>RobotCap v4.1 | Dashboard FACCI</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -49,13 +49,14 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- CAMBIO 1: Reducción del tamaño del badge de llenado al 30% aprox --- */
+        /* --- CAMBIO 1: Reducción del tamaño del badge de llenado --- */
         .badge-llenado {
-            min-width: 60px; /* Reducido significativamente */
-            padding: 4px 8px !important;
-            font-size: 0.75rem !important;
+            min-width: 80px;
+            padding: 4px 10px !important;
+            font-size: 0.7rem !important;
             font-weight: bold;
             display: inline-block;
+            border-radius: 20px;
         }
 
         .theme-switch { width: 50px; height: 24px; background: #333; border-radius: 20px; position: relative; cursor: pointer; border: 1px solid #555; }
@@ -538,7 +539,7 @@
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
                 
-                // CAMBIO 2: Ocultar gráficas de usuario al ser admin
+                /* CAMBIO 2: Al ser Admin, se ocultan las gráficas de usuario */
                 userView.classList.add('d-none'); 
                 userView.classList.remove('user-only');
 
@@ -549,7 +550,7 @@
                 badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
                 
-                // Mostrar gráficas de usuario si no es admin
+                /* Mostrar gráficas de usuario si no es admin */
                 userView.classList.remove('d-none');
                 userView.classList.add('user-only');
 
