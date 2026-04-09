@@ -19,16 +19,17 @@
             --navbar-text: #000000;
         }
         
-        body { transition: background-color 0.3s ease; font-family: 'Inter', sans-serif; }
+        body { transition: background-color 0.3s ease; font-family: 'Inter', sans-serif; min-height: 100vh; }
         .navbar { background-color: var(--navbar-bg) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .navbar .navbar-brand, .navbar .btn { color: var(--navbar-text) !important; }
 
         .card { 
             border-radius: 16px; 
             overflow: hidden; 
-            border: 1px solid rgba(0,0,0,0.1); 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid rgba(128,128,128,0.1); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             background-color: var(--bs-card-bg);
+            transition: transform 0.2s;
         }
         
         .admin-toolbar {
@@ -41,10 +42,11 @@
         .card-header-custom { 
             background-color: var(--robot-green) !important; 
             color: white !important; 
-            padding: 10px 15px;
+            padding: 12px 15px;
             font-weight: 600;
-            font-size: 0.9rem;
-            border-bottom: none;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .card-body-custom { padding: 20px; }
 
@@ -54,10 +56,10 @@
         [data-bs-theme="light"] .theme-switch .dot { left: 27px; background: #212529; }
 
         #user-role.badge { background-color: #6c757d !important; color: white !important; padding: 8px 12px; }
-        #user-role.badge.admin-active { background-color: #007bff !important; }
+        #user-role.badge.admin-active { background-color: #0d6efd !important; }
 
         .admin-only { display: none !important; }
-        .h-large { height: 350px; }
+        .h-large { height: 320px; }
         .h-gauge { height: 180px; margin-bottom: -10px; }
         
         .progress-bar-animated-custom {
@@ -70,53 +72,65 @@
             100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
         }
 
-        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .heatmap-cell { 
             aspect-ratio: 1; 
-            border-radius: 4px; 
+            border-radius: 6px; 
             background-color: var(--robot-accent); 
             cursor: pointer; 
-            transition: 0.2s; 
+            transition: all 0.2s; 
         }
-        [data-bs-theme="dark"] .heatmap-cell { background-color: #222; }
+        [data-bs-theme="dark"] .heatmap-cell { background-color: #2a2a2a; }
         [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; }
 
-        .heatmap-cell:hover { transform: scale(1.1); filter: brightness(1.2); border: 1px solid var(--robot-green); }
+        .heatmap-cell:hover { transform: scale(1.15); filter: brightness(1.2); z-index: 2; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-        .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        .table-mini { font-size: 0.75rem; }
+        .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; animation: blink 2s infinite; }
         
-        .table-mini td { vertical-align: middle !important; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        footer { border-top: 1px solid rgba(128,128,128,0.2); padding: 2rem 0; margin-top: 3rem; }
-        .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; }
+        .btn-action { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-mini { font-size: 0.75rem; }
+        .table-mini td { vertical-align: middle !important; padding: 10px 8px; }
+
+        footer { border-top: 1px solid rgba(128,128,128,0.2); padding: 2rem 0; margin-top: 3rem; background: rgba(0,0,0,0.02); }
+        .disclaimer { font-size: 0.75rem; color: #6c757d; max-width: 600px; margin: 0 auto; line-height: 1.6; }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#">🤖 RobotCap</a>
+        <a class="navbar-brand fw-bold" href="#">🤖 RobotCap <span class="fw-light">FACCI</span></a>
         <div class="d-flex align-items-center">
-            <div class="theme-switch me-4" id="btn-theme-toggle"><div class="dot"></div></div>
+            <div class="theme-switch me-4" id="btn-theme-toggle" title="Cambiar Tema"><div class="dot"></div></div>
             <span id="user-role" class="badge me-3">Invitado</span>
-            <button class="btn btn-sm btn-outline-dark" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">Acceder</button>
-            <button class="btn btn-sm btn-outline-danger d-none" id="btn-logout">Salir</button>
+            <button class="btn btn-sm btn-outline-dark fw-bold" id="btn-show-login" data-bs-toggle="modal" data-bs-target="#loginModal">ACCEDER</button>
+            <button class="btn btn-sm btn-outline-danger fw-bold d-none" id="btn-logout">SALIR</button>
         </div>
     </div>
 </nav>
 
 <div class="container mt-4">
     <div class="row g-3 mb-4 text-center">
-        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">TOTAL TAPITAS</div><div class="card-body py-3"><h2 id="stat-tapitas" class="fw-bold m-0 text-success">0</h2></div></div></div>
-        <div class="col-md-4"><div class="card border-0"><div class="card-header-custom">PESO ACUMULADO</div><div class="card-body py-3"><h2 id="stat-peso" class="fw-bold m-0 text-success">0g</h2></div></div></div>
         <div class="col-md-4">
-            <div class="card border-0">
+            <div class="card border-0 h-100">
+                <div class="card-header-custom">TOTAL TAPITAS</div>
+                <div class="card-body py-4"><h2 id="stat-tapitas" class="fw-bold m-0 text-success">0</h2></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 h-100">
+                <div class="card-header-custom">PESO ACUMULADO</div>
+                <div class="card-body py-4"><h2 id="stat-peso" class="fw-bold m-0 text-success">0g</h2></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 h-100">
                 <div class="card-header-custom">NIVEL CONTENEDOR: <span id="fill-pct">0%</span></div>
-                <div class="card-body py-3 px-4">
-                    <div class="progress" style="height: 15px; background-color: rgba(128,128,128,0.2);">
+                <div class="card-body py-4 px-4">
+                    <div class="progress" style="height: 20px; background-color: rgba(128,128,128,0.2); border-radius: 10px;">
                         <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success progress-bar-animated-custom" style="width: 0%"></div>
                     </div>
                 </div>
@@ -126,42 +140,42 @@
 
     <div id="admin-view" class="row g-4 admin-only mb-4">
         <div class="col-12">
-            <div class="admin-toolbar">
+            <div class="admin-toolbar shadow-sm">
                 <div class="row g-2">
-                    <div class="col-md-3"><button class="btn btn-outline-primary btn-action w-100" onclick="toggleInsertPanel()">➕ Nueva Inserción</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="generarPDF()">📄 Reporte Ahora</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100">🔄 Reiniciar MQTT</button></div>
-                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100">🧹 Reset Contador</button></div>
+                    <div class="col-md-3"><button class="btn btn-primary btn-action w-100" onclick="toggleInsertPanel()">➕ Nueva Inserción</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-info btn-action w-100" onclick="generarPDF()">📄 Reporte PDF</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-warning btn-action w-100" onclick="location.reload()">🔄 Sincronizar</button></div>
+                    <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100" onclick="alert('Funcionalidad restringida')">🧹 Reset Sistema</button></div>
                 </div>
             </div>
         </div>
 
         <div class="col-12 d-none" id="insert-panel">
             <div class="card border-primary">
-                <div class="card-header-custom bg-primary text-white" style="background-color: #0d6efd !important;">
+                <div class="card-header-custom bg-primary" style="background-color: #0d6efd !important;">
                     🛠️ Inserción Manual de Datos (DB)
                 </div>
                 <div class="card-body-custom">
                     <form id="form-manual-insert" class="row g-3">
                         <div class="col-md-3">
-                            <label class="form-label small">Gramos (peso_delta_g)</label>
-                            <input type="number" id="m-gramos" class="form-control form-control-sm" required placeholder="Ej: 25">
+                            <label class="form-label small fw-bold">Gramos (Δ peso)</label>
+                            <input type="number" id="m-gramos" class="form-control" required placeholder="Ej: 25">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small">Tapitas (estimadas)</label>
-                            <input type="number" id="m-tapitas" class="form-control form-control-sm" required placeholder="Ej: 10">
+                            <label class="form-label small fw-bold">Tapitas (estimadas)</label>
+                            <input type="number" id="m-tapitas" class="form-control" required placeholder="Ej: 10">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small">Capacidad Usada (0-3000g)</label>
-                            <input type="number" id="m-nivel" class="form-control form-control-sm" required placeholder="Peso total actual">
+                            <label class="form-label small fw-bold">Peso Total Actual (0-3000g)</label>
+                            <input type="number" id="m-nivel" class="form-control" required placeholder="Suma total">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small">ID del Robot</label>
-                            <input type="text" id="m-robot" class="form-control form-control-sm" value="ROBOT_UNPHU_01" required>
+                            <label class="form-label small fw-bold">ID del Robot</label>
+                            <input type="text" id="m-robot" class="form-control" value="ROBOT_UNPHU_01" required>
                         </div>
                         <div class="col-12 text-end">
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleInsertPanel()">Cancelar</button>
-                            <button type="submit" class="btn btn-primary btn-sm">Guardar en Base de Datos</button>
+                            <button type="button" class="btn btn-light btn-sm me-2" onclick="toggleInsertPanel()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-4">Guardar en Base de Datos</button>
                         </div>
                     </form>
                 </div>
@@ -169,21 +183,21 @@
         </div>
 
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header-custom">📊 Comparativo: Mes Actual vs Anterior</div>
-                <div class="card-body-custom" style="height: 250px;"><canvas id="chartAdminComparativo"></canvas></div>
+            <div class="card h-100">
+                <div class="card-header-custom">📊 Comparativo: Crecimiento Semanal</div>
+                <div class="card-body-custom" style="height: 280px;"><canvas id="chartAdminComparativo"></canvas></div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header-custom">🖥️ STATUS HARDWARE</div>
                 <div class="card-body-custom">
-                    <div class="small mb-3"><span class="status-dot dot-green"></span> MQTT Broker: <b class="text-success">Online</b></div>
-                    <div class="row text-center g-2 border-top pt-2">
-                        <div class="col-4"><small class="text-muted">CPU</small><br><b>45%</b></div>
-                        <div class="col-4"><small class="text-muted">RAM</small><br><b>312MB</b></div>
-                        <div class="col-4"><small class="text-muted">TEMP</small><br><b class="text-warning">52°C</b></div>
+                    <div class="mb-4"><span class="status-dot dot-green"></span> MQTT Broker: <b class="text-success">Online</b></div>
+                    <div class="row text-center g-2 border-top pt-4">
+                        <div class="col-4"><small class="text-muted d-block">CPU</small><b class="fs-5">45%</b></div>
+                        <div class="col-4"><small class="text-muted d-block">RAM</small><b class="fs-5">312MB</b></div>
+                        <div class="col-4"><small class="text-muted d-block">TEMP</small><b class="text-warning fs-5">52°C</b></div>
                     </div>
                 </div>
             </div>
@@ -192,12 +206,12 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <span>📂 Registros de Base de Datos</span>
-                    <button class="btn btn-xs btn-light py-0 px-2" style="font-size: 0.7rem;" onclick="exportarCSV()">Exportar tabla a CSV</button>
+                    <span>📂 Últimos Registros de Base de Datos</span>
+                    <button class="btn btn-sm btn-light py-0 px-2 fw-bold" style="font-size: 0.65rem;" onclick="exportarCSV()">EXPORTAR CSV</button>
                 </div>
                 <div class="card-body-custom p-0">
-                    <div class="table-responsive" style="max-height: 300px;">
-                        <table class="table table-sm table-hover table-mini mb-0">
+                    <div class="table-responsive" style="max-height: 350px;">
+                        <table class="table table-hover table-mini mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Fecha/Hora</th>
@@ -218,53 +232,58 @@
     <div id="user-view" class="row g-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header-custom">📅 Historial de Recolección Semanal</div>
+                <div class="card-header-custom">📅 Historial de Recolección (7 días)</div>
                 <div class="card-body-custom h-large"><canvas id="chartUserHistorial"></canvas></div>
             </div>
         </div>
         <div class="col-md-7">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header-custom">🔥 Mapa de Calor: Actividad Reciente</div>
                 <div class="card-body-custom">
-                    <div id="heatmap-container" class="heatmap-grid mb-2"></div>
-                    <div class="d-flex justify-content-between small text-muted"><span>Anterior</span><span>Más reciente</span></div>
+                    <div id="heatmap-container" class="heatmap-grid mb-3"></div>
+                    <div class="d-flex justify-content-between small text-muted px-1">
+                        <span>Hace 28 eventos</span>
+                        <span>Último evento</span>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-5">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header-custom">🚀 Ritmo de Donación Diario</div>
                 <div class="card-body-custom text-center">
                     <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
-                    <h4 id="gauge-text" class="fw-bold text-success">0%</h4>
-                    <small class="text-muted">vs. Objetivo Diario (50 tapitas)</small>
+                    <h2 id="gauge-text" class="fw-bold text-success mb-0">0%</h2>
+                    <p class="text-muted small mt-1">Objetivo: 50 tapitas/día</p>
                 </div>
             </div>
         </div>
     </div>
 
     <footer class="text-center">
-        <p class="disclaimer mb-2">
+        <p class="disclaimer">
             © 2026 RobotCap Project | <strong>Fundación Amigos Contra el Cáncer Infantil (FACCI)</strong> <br>
-            Universidad Nacional Pedro Henríquez Ureña (UNPHU)
+            Desarrollado en colaboración con la <strong>Universidad Nacional Pedro Henríquez Ureña (UNPHU)</strong><br>
+            <span class="opacity-50">Santo Domingo, República Dominicana.</span>
         </p>
     </footer>
 </div>
 
-<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+<div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-success bg-dark text-white">
             <div class="modal-body p-4 text-center">
-                <h5 class="mb-3">Admin Login</h5>
+                <h5 class="mb-4 fw-bold">Admin Login</h5>
                 <input type="email" id="in-email" class="form-control mb-2" placeholder="Email">
                 <input type="password" id="in-pass" class="form-control mb-3" placeholder="Contraseña">
-                <button class="btn btn-success w-100" id="btn-do-login">Acceder</button>
+                <button class="btn btn-success w-100 fw-bold" id="btn-do-login">ACCEDER</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // NOTA: En producción, usa variables de entorno para la KEY
     const SUPABASE_URL = "https://seqhkezofckiqsbxztwo.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Nirtr7MckkR8ecaPCnjTFw_FHxXLmaA";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -275,16 +294,26 @@
         await cargarDatos();
         configurarAuth();
         configurarInsercionManual();
+        
+        // Auto-refresh cada 30 segundos
+        setInterval(cargarDatos, 30000);
     }
 
     function toggleInsertPanel() {
         const panel = document.getElementById('insert-panel');
         panel.classList.toggle('d-none');
+        if(!panel.classList.contains('d-none')) panel.scrollIntoView({ behavior: 'smooth' });
     }
 
     function configurarInsercionManual() {
-        document.getElementById('form-manual-insert').onsubmit = async (e) => {
+        const form = document.getElementById('form-manual-insert');
+        if(!form) return;
+        form.onsubmit = async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Guardando...";
+
             const gramos = parseFloat(document.getElementById('m-gramos').value);
             const tapitas = parseInt(document.getElementById('m-tapitas').value);
             const pesoTotalActual = parseFloat(document.getElementById('m-nivel').value);
@@ -301,86 +330,107 @@
                 }
             ]);
 
-            if (error) alert("Error al insertar: " + error.message);
+            if (error) alert("Error: " + error.message);
             else {
-                alert("✅ Datos insertados correctamente");
-                document.getElementById('form-manual-insert').reset();
+                form.reset();
                 toggleInsertPanel();
                 await cargarDatos(); 
             }
+            btn.disabled = false;
+            btn.innerText = "Guardar en Base de Datos";
         };
     }
 
     async function cargarDatos() {
-        // Cargar Resumen (Gráfica Lineal y Stats superiores)
-        const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
-        if (resumen && resumen.length > 0) {
-            const hoy = resumen[0];
-            document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
-            document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(0) + "g";
-            renderUserCharts(resumen);
+        try {
+            // 1. Cargar Resumen Diario
+            const { data: resumen } = await _supabase.from('resumen_diario')
+                .select('*')
+                .order('fecha', { ascending: false })
+                .limit(7);
 
-            // Calcular Ritmo (Gauge) - Objetivo: 50 tapitas/día
-            const objetivo = 50;
-            const ritmo = Math.round((hoy.total_tapitas / objetivo) * 100);
-            renderGaugeChart(ritmo);
-        }
+            if (resumen && resumen.length > 0) {
+                const totalTapitas = resumen.reduce((a, b) => a + b.total_tapitas, 0);
+                const totalGramos = resumen.reduce((a, b) => a + b.total_gramos, 0);
+                
+                document.getElementById('stat-tapitas').innerText = totalTapitas.toLocaleString();
+                document.getElementById('stat-peso').innerText = totalGramos.toFixed(0) + "g";
+                renderUserCharts(resumen);
 
-        // Cargar Eventos (Tabla Admin, Heatmap y Barra de progreso)
-        const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
-        if (eventos && eventos.length > 0) {
-            datosEventos = eventos;
-            const ultimo = eventos[0];
-            document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
-            document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
-            actualizarTablaAdmin(eventos);
-            renderAdminCharts();
-            renderHeatmap(); // Ahora usa datosEventos
+                const objetivo = 50;
+                const ritmo = Math.round((resumen[0].total_tapitas / objetivo) * 100);
+                renderGaugeChart(ritmo);
+            }
+
+            // 2. Cargar Eventos Individuales
+            const { data: eventos } = await _supabase.from('eventos_insercion')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(50);
+
+            if (eventos && eventos.length > 0) {
+                datosEventos = eventos;
+                const ultimo = eventos[0];
+                document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
+                document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
+                
+                // Actualizar color de barra según nivel
+                const pb = document.getElementById('progress-bar');
+                pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
+                               (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
+
+                actualizarTablaAdmin(eventos);
+                renderAdminCharts();
+                renderHeatmap();
+            }
+        } catch (err) {
+            console.error("Error cargando datos:", err);
         }
     }
 
     function renderGaugeChart(valor) {
         const ctx = document.getElementById('chartGauge');
+        if(!ctx) return;
         if(window.gaugeChart) window.gaugeChart.destroy();
         
-        const dataValue = Math.min(valor, 100);
+        const color = valor >= 100 ? '#2ecc71' : (valor > 50 ? '#f1c40f' : '#e67e22');
         window.gaugeChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 datasets: [{
-                    data: [dataValue, 100 - dataValue],
-                    backgroundColor: ['#2ecc71', 'rgba(128,128,128,0.2)'],
+                    data: [Math.min(valor, 100), Math.max(0, 100 - valor)],
+                    backgroundColor: [color, 'rgba(128,128,128,0.1)'],
                     borderWidth: 0
                 }]
             },
             options: {
                 rotation: -90,
                 circumference: 180,
-                cutout: '85%',
+                cutout: '80%',
                 plugins: { tooltip: { enabled: false } },
                 maintainAspectRatio: false
             }
         });
         document.getElementById('gauge-text').innerText = valor + "%";
+        document.getElementById('gauge-text').className = `fw-bold mb-0 text-${valor >= 100 ? 'success' : (valor > 50 ? 'warning' : 'danger')}`;
     }
 
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
+        if(!container) return;
         container.innerHTML = '';
         
-        // Usamos los últimos 28 eventos o slots vacíos si no hay suficientes
+        // Siempre mostrar 28 slots (4 semanas de actividad visual)
         for(let i = 27; i >= 0; i--) {
             const d = document.createElement('div');
             d.className = 'heatmap-cell';
-            
-            // Invertimos para que el último evento sea el último cuadro
             const data = datosEventos[i];
+            
             if (data) {
-                const intensidad = Math.min(data.tapitas_estimadas / 20, 1); // 20 tapitas = 100% brillo
+                const intensidad = Math.min(data.tapitas_estimadas / 15, 1); 
+                d.style.backgroundColor = 'var(--robot-accent)';
                 d.style.opacity = intensidad + 0.1;
-                d.title = `${new Date(data.timestamp).toLocaleDateString()}: ${data.tapitas_estimadas} tapitas`;
-            } else {
-                d.style.opacity = 0.05;
+                d.title = `${new Date(data.timestamp).toLocaleString()}\nTapitas: ${data.tapitas_estimadas}`;
             }
             container.appendChild(d);
         }
@@ -389,20 +439,20 @@
     function actualizarTablaAdmin(data) {
         const body = document.getElementById('admin-table-body');
         if (!body) return;
-        body.innerHTML = data.slice(0,10).map(e => {
+        body.innerHTML = data.slice(0,12).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
             let label = e.nivel_pct > 85 ? "CRÍTICO" : (e.nivel_pct > 60 ? "Medio" : "Bajo");
             return `
                 <tr>
-                    <td>${new Date(e.timestamp).toLocaleString()}</td>
+                    <td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td>
                     <td>${e.peso_delta_g}g</td>
-                    <td>${e.tapitas_estimadas}</td>
+                    <td><span class="badge bg-light text-dark">${e.tapitas_estimadas}</span></td>
                     <td>
-                        <span class="badge ${badgeClass}" style="min-width: 95px; padding: 5px 10px; font-size: 0.8rem; display: inline-block;">
+                        <span class="badge ${badgeClass}" style="min-width: 90px;">
                             ${e.nivel_pct}% - ${label}
                         </span>
                     </td>
-                    <td>${e.robot_id}</td>
+                    <td class="text-muted">${e.robot_id}</td>
                 </tr>
             `;
         }).join('');
@@ -410,14 +460,34 @@
 
     function renderUserCharts(resumen) {
         const ctx = document.getElementById('chartUserHistorial');
+        if(!ctx) return;
         if(window.userChart) window.userChart.destroy();
+        
+        const labels = resumen.map(d => {
+            const date = new Date(d.fecha + "T00:00:00");
+            return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+        }).reverse();
+
         window.userChart = new Chart(ctx, {
             type: 'line',
             data: { 
-                labels: resumen.map(d => d.fecha).reverse(),
-                datasets: [{ label: 'Tapitas Diarias', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
+                labels: labels,
+                datasets: [{ 
+                    label: 'Tapitas', 
+                    data: resumen.map(d => d.total_tapitas).reverse(), 
+                    borderColor: '#2ecc71', 
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)', 
+                    fill: true, 
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#2ecc71'
+                }] 
             },
-            options: { maintainAspectRatio: false }
+            options: { 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' } }, x: { grid: { display: false } } }
+            }
         });
     }
 
@@ -426,9 +496,20 @@
         if (!ctx) return;
         if(window.adminChart) window.adminChart.destroy();
         window.adminChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: ['S1', 'S2', 'S3', 'S4'], datasets: [{ label: 'Rendimiento Mes', data: [300, 600, 850, 1200], borderColor: '#2ecc71', tension: 0.3 }] },
-            options: { maintainAspectRatio: false }
+            type: 'bar',
+            data: { 
+                labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'], 
+                datasets: [{ 
+                    label: 'Tapitas Recolectadas', 
+                    data: [450, 620, 810, 1100], 
+                    backgroundColor: '#198754',
+                    borderRadius: 5
+                }] 
+            },
+            options: { 
+                maintainAspectRatio: false,
+                scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' } } }
+            }
         });
     }
 
@@ -436,8 +517,13 @@
         const btn = document.getElementById('btn-theme-toggle');
         btn.onclick = () => {
             const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-            document.documentElement.setAttribute('data-bs-theme', currentTheme === 'dark' ? 'light' : 'dark');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
         };
+        
+        const savedTheme = localStorage.getItem('theme');
+        if(savedTheme) document.documentElement.setAttribute('data-bs-theme', savedTheme);
     }
 
     function configurarAuth() {
@@ -448,7 +534,7 @@
             const btnLogin = document.getElementById('btn-show-login');
 
             if (session) {
-                badge.innerText = "ADMIN";
+                badge.innerText = "ADMINISTRADOR";
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
                 btnLogout.classList.remove('d-none');
@@ -466,7 +552,7 @@
             const email = document.getElementById('in-email').value;
             const password = document.getElementById('in-pass').value;
             const { error } = await _supabase.auth.signInWithPassword({ email, password });
-            if (error) alert("Error: " + error.message);
+            if (error) alert("Credenciales incorrectas");
             else bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
         };
 
@@ -481,23 +567,46 @@
         const doc = new jsPDF();
         doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
         doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
-        const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
-        doc.autoTable({ startY: 40, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
-        doc.save("Reporte_FACCI.pdf");
+        doc.setFontSize(10); doc.setTextColor(100);
+        doc.text("Generado el: " + new Date().toLocaleString(), 14, 28);
+        
+        const rows = datosEventos.map(e => [
+            new Date(e.timestamp).toLocaleString(), 
+            e.peso_delta_g+"g", 
+            e.tapitas_estimadas, 
+            e.nivel_pct+"%", 
+            e.robot_id
+        ]);
+        
+        doc.autoTable({ 
+            startY: 35, 
+            head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], 
+            body: rows, 
+            theme: 'grid', 
+            headStyles: { fillColor: [25, 135, 84] } 
+        });
+        doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
     }
 
     function exportarCSV() {
         if (datosEventos.length === 0) return;
         const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
-        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}g"`, e.tapitas_estimadas, `"${e.nivel_pct}%"`, e.robot_id]);
+        const filas = datosEventos.map(e => [
+            `"${new Date(e.timestamp).toLocaleString()}"`, 
+            `"${e.peso_delta_g}"`, 
+            e.tapitas_estimadas, 
+            e.nivel_pct, 
+            e.robot_id
+        ]);
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", "RobotCap_Registros.csv");
+        link.setAttribute("download", "RobotCap_Data.csv");
         link.click();
     }
 
-    init();
+    // Ejecutar al cargar
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
