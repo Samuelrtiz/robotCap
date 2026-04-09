@@ -58,7 +58,7 @@
 
         .admin-only { display: none !important; }
         .h-large { height: 350px; }
-        .h-gauge { height: 250px; }
+        .h-gauge { height: 180px; margin-bottom: -10px; }
         
         .progress-bar-animated-custom {
             animation: progress-bar-stripes 1s linear infinite, pulse-green 2s infinite;
@@ -224,10 +224,10 @@
         </div>
         <div class="col-md-7">
             <div class="card">
-                <div class="card-header-custom">🔥 Mapa de Calor: Actividad</div>
+                <div class="card-header-custom">🔥 Mapa de Calor: Actividad Reciente</div>
                 <div class="card-body-custom">
                     <div id="heatmap-container" class="heatmap-grid mb-2"></div>
-                    <div class="d-flex justify-content-between small text-muted"><span>Lunes</span><span>Domingo</span></div>
+                    <div class="d-flex justify-content-between small text-muted"><span>Anterior</span><span>Más reciente</span></div>
                 </div>
             </div>
         </div>
@@ -237,7 +237,7 @@
                 <div class="card-body-custom text-center">
                     <div class="h-gauge"><canvas id="chartGauge"></canvas></div>
                     <h4 id="gauge-text" class="fw-bold text-success">0%</h4>
-                    <small class="text-muted">vs. Promedio histórico</small>
+                    <small class="text-muted">vs. Objetivo Diario (50 tapitas)</small>
                 </div>
             </div>
         </div>
@@ -285,12 +285,10 @@
     function configurarInsercionManual() {
         document.getElementById('form-manual-insert').onsubmit = async (e) => {
             e.preventDefault();
-            
             const gramos = parseFloat(document.getElementById('m-gramos').value);
             const tapitas = parseInt(document.getElementById('m-tapitas').value);
             const pesoTotalActual = parseFloat(document.getElementById('m-nivel').value);
             const robotId = document.getElementById('m-robot').value;
-            
             const nivelPct = Math.min(Math.round((pesoTotalActual / 3000) * 100), 100);
 
             const { error } = await _supabase.from('eventos_insercion').insert([
@@ -303,9 +301,8 @@
                 }
             ]);
 
-            if (error) {
-                alert("Error al insertar: " + error.message);
-            } else {
+            if (error) alert("Error al insertar: " + error.message);
+            else {
                 alert("✅ Datos insertados correctamente");
                 document.getElementById('form-manual-insert').reset();
                 toggleInsertPanel();
@@ -314,44 +311,78 @@
         };
     }
 
-    function generarPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
-        doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
-        const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
-        doc.autoTable({ startY: 40, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
-        doc.save("Reporte_FACCI.pdf");
-    }
-
-    function exportarCSV() {
-        if (datosEventos.length === 0) return;
-        const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
-        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}g"`, e.tapitas_estimadas, `"${e.nivel_pct}%"`, e.robot_id]);
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", "RobotCap_Registros.csv");
-        link.click();
-    }
-
     async function cargarDatos() {
+        // Cargar Resumen (Gráfica Lineal y Stats superiores)
         const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
         if (resumen && resumen.length > 0) {
+            const hoy = resumen[0];
             document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0);
             document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(0) + "g";
             renderUserCharts(resumen);
+
+            // Calcular Ritmo (Gauge) - Objetivo: 50 tapitas/día
+            const objetivo = 50;
+            const ritmo = Math.round((hoy.total_tapitas / objetivo) * 100);
+            renderGaugeChart(ritmo);
         }
 
+        // Cargar Eventos (Tabla Admin, Heatmap y Barra de progreso)
         const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
         if (eventos && eventos.length > 0) {
             datosEventos = eventos;
-            const nivel = eventos[0].nivel_pct;
-            document.getElementById('fill-pct').innerText = nivel + "%";
-            document.getElementById('progress-bar').style.width = nivel + "%";
+            const ultimo = eventos[0];
+            document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
+            document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
             actualizarTablaAdmin(eventos);
             renderAdminCharts();
-            renderHeatmap();
+            renderHeatmap(); // Ahora usa datosEventos
+        }
+    }
+
+    function renderGaugeChart(valor) {
+        const ctx = document.getElementById('chartGauge');
+        if(window.gaugeChart) window.gaugeChart.destroy();
+        
+        const dataValue = Math.min(valor, 100);
+        window.gaugeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [dataValue, 100 - dataValue],
+                    backgroundColor: ['#2ecc71', 'rgba(128,128,128,0.2)'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                rotation: -90,
+                circumference: 180,
+                cutout: '85%',
+                plugins: { tooltip: { enabled: false } },
+                maintainAspectRatio: false
+            }
+        });
+        document.getElementById('gauge-text').innerText = valor + "%";
+    }
+
+    function renderHeatmap() {
+        const container = document.getElementById('heatmap-container');
+        container.innerHTML = '';
+        
+        // Usamos los últimos 28 eventos o slots vacíos si no hay suficientes
+        for(let i = 27; i >= 0; i--) {
+            const d = document.createElement('div');
+            d.className = 'heatmap-cell';
+            
+            // Invertimos para que el último evento sea el último cuadro
+            const data = datosEventos[i];
+            if (data) {
+                const intensidad = Math.min(data.tapitas_estimadas / 20, 1); // 20 tapitas = 100% brillo
+                d.style.opacity = intensidad + 0.1;
+                d.title = `${new Date(data.timestamp).toLocaleDateString()}: ${data.tapitas_estimadas} tapitas`;
+            } else {
+                d.style.opacity = 0.05;
+            }
+            container.appendChild(d);
         }
     }
 
@@ -384,7 +415,7 @@
             type: 'line',
             data: { 
                 labels: resumen.map(d => d.fecha).reverse(),
-                datasets: [{ label: 'Tapitas', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
+                datasets: [{ label: 'Tapitas Diarias', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
             },
             options: { maintainAspectRatio: false }
         });
@@ -396,20 +427,9 @@
         if(window.adminChart) window.adminChart.destroy();
         window.adminChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: ['S1', 'S2', 'S3', 'S4'], datasets: [{ label: 'Mes Actual', data: [300, 600, 850, 1200], borderColor: '#2ecc71', tension: 0.3 }] },
+            data: { labels: ['S1', 'S2', 'S3', 'S4'], datasets: [{ label: 'Rendimiento Mes', data: [300, 600, 850, 1200], borderColor: '#2ecc71', tension: 0.3 }] },
             options: { maintainAspectRatio: false }
         });
-    }
-
-    function renderHeatmap() {
-        const container = document.getElementById('heatmap-container');
-        container.innerHTML = '';
-        for(let i=0; i<28; i++) {
-            const d = document.createElement('div');
-            d.className = 'heatmap-cell';
-            d.style.opacity = (Math.random() * 0.9) + 0.1;
-            container.appendChild(d);
-        }
     }
 
     function gestionarTema() {
@@ -430,13 +450,13 @@
             if (session) {
                 badge.innerText = "ADMIN";
                 badge.classList.add('admin-active');
-                adminView.classList.remove('admin-only'); // Muestra panel admin
+                adminView.classList.remove('admin-only');
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
-                adminView.classList.add('admin-only'); // Oculta panel admin
+                adminView.classList.add('admin-only');
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
@@ -454,6 +474,27 @@
             await _supabase.auth.signOut(); 
             location.reload(); 
         };
+    }
+
+    function generarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
+        doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
+        const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
+        doc.autoTable({ startY: 40, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
+        doc.save("Reporte_FACCI.pdf");
+    }
+
+    function exportarCSV() {
+        if (datosEventos.length === 0) return;
+        const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
+        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}g"`, e.tapitas_estimadas, `"${e.nivel_pct}%"`, e.robot_id]);
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", "RobotCap_Registros.csv");
+        link.click();
     }
 
     init();
