@@ -48,13 +48,12 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .card-body-custom { padding: 20px; }
 
         /* --- MEJORA: Tamaño Estado Llenado (+50%) --- */
         .badge-llenado {
-            min-width: 135px; /* Aumentado de 90px */
-            padding: 12px 18px !important; /* Aumentado de 8px 12px */
-            font-size: 1.1rem !important; /* Aumentado de 0.75rem aprox */
+            min-width: 135px;
+            padding: 12px 18px !important;
+            font-size: 1.1rem !important;
         }
 
         .theme-switch { width: 50px; height: 24px; background: #333; border-radius: 20px; position: relative; cursor: pointer; border: 1px solid #555; }
@@ -66,7 +65,7 @@
         #user-role.badge.admin-active { background-color: #0d6efd !important; }
 
         .admin-only { display: none !important; }
-        .user-only { display: flex !important; } /* Clase controlada por JS */
+        .user-only { display: flex !important; } 
 
         .h-large { height: 320px; }
         .h-gauge { height: 180px; margin-bottom: -10px; }
@@ -442,7 +441,7 @@
         body.innerHTML = data.slice(0,12).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
             let label = e.nivel_pct > 85 ? "CRÍTICO" : (e.nivel_pct > 60 ? "Medio" : "Bajo");
-            // APLICACIÓN DE CLASE .badge-llenado (+50% tamaño)
+            
             return `
                 <tr>
                     <td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td>
@@ -528,7 +527,7 @@
         _supabase.auth.onAuthStateChange((event, session) => {
             const badge = document.getElementById('user-role');
             const adminView = document.getElementById('admin-view');
-            const userView = document.getElementById('user-view'); // Vista usuario
+            const userView = document.getElementById('user-view'); 
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
 
@@ -536,15 +535,15 @@
                 badge.innerText = "ADMINISTRADOR";
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
-                userView.classList.remove('user-only'); // OCULTAR GRAFICAS USUARIO
-                userView.style.display = 'none';
+                userView.classList.remove('user-only');
+                userView.style.display = 'none'; // Se oculta la vista pública si es admin
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
-                userView.classList.add('user-only'); // MOSTRAR GRAFICAS USUARIO
+                userView.classList.add('user-only');
                 userView.style.display = 'flex';
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
