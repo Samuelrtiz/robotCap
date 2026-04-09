@@ -49,11 +49,11 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- MEJORA: Tamaño Estado Llenado --- */
+        /* --- CAMBIO 1: Reducción del tamaño del badge de llenado al 30% aprox --- */
         .badge-llenado {
-            min-width: 140px;
-            padding: 10px 15px !important;
-            font-size: 1rem !important;
+            min-width: 60px; /* Reducido significativamente */
+            padding: 4px 8px !important;
+            font-size: 0.75rem !important;
             font-weight: bold;
             display: inline-block;
         }
@@ -537,14 +537,22 @@
                 badge.innerText = "ADMINISTRADOR";
                 badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
-                userView.classList.add('d-none'); // Escondemos vista pública para admin
+                
+                // CAMBIO 2: Ocultar gráficas de usuario al ser admin
+                userView.classList.add('d-none'); 
+                userView.classList.remove('user-only');
+
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
                 badge.innerText = "Invitado";
                 badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
+                
+                // Mostrar gráficas de usuario si no es admin
                 userView.classList.remove('d-none');
+                userView.classList.add('user-only');
+
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
