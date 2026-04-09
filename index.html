@@ -97,8 +97,9 @@
             cursor: pointer; 
             transition: all 0.2s; 
         }
-        [data-bs-theme="dark"] .heatmap-cell { background-color: #2a2a2a; }
-        [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; }
+        /* CAMBIO: Colores base corregidos para el estado vacío en tema oscuro/claro */
+        [data-bs-theme="dark"] .heatmap-cell { background-color: #343a40; } /* Gris oscuro para celdas vacías */
+        [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; } /* Gris claro para celdas vacías */
 
         .heatmap-cell:hover { transform: scale(1.15); filter: brightness(1.2); z-index: 2; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
@@ -119,7 +120,7 @@
 
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#">🤖 RobotCap <span class="fw-light"></span></a>
+        <a class="navbar-brand fw-bold" href="#">🤖 RobotCap <span class="fw-light">FACCI</span></a>
         <div class="d-flex align-items-center">
             <div class="theme-switch me-4" id="btn-theme-toggle" title="Cambiar Tema"><div class="dot"></div></div>
             <span id="user-role" class="badge me-3">Invitado</span>
@@ -369,7 +370,7 @@
                 document.getElementById('stat-peso').innerText = "0g";
                 document.getElementById('fill-pct').innerText = "0%";
                 document.getElementById('progress-bar').style.width = "0%";
-                await cargarDatos();
+                await cargarDatos(); 
             }
         } catch (err) {
             console.error(err);
@@ -448,10 +449,10 @@
             if (resumen && resumen.length > 0) {
                 const totalTapitas = resumen.reduce((a, b) => a + b.total_tapitas, 0);
                 const totalGramos = resumen.reduce((a, b) => a + b.total_gramos, 0);
-                
                 document.getElementById('stat-tapitas').innerText = totalTapitas.toLocaleString();
                 document.getElementById('stat-peso').innerText = totalGramos.toFixed(0) + "g";
                 renderUserCharts(resumen);
+
                 const objetivo = 50;
                 const tapitasHoy = resumen[0].total_tapitas;
                 const ritmo = Math.round((tapitasHoy / objetivo) * 100);
@@ -474,15 +475,15 @@
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
-                // CAMBIO 1: El tooltip ahora muestra la última cantidad introducida [cite: 273]
                 if(tooltipNivel) {
                     const cardNivel = document.getElementById('card-nivel');
-                    cardNivel.setAttribute('data-bs-original-title', `Última cantidad de tapitas introducidas: ${ultimo.tapitas_estimadas}`);
+                    cardNivel.setAttribute('data-bs-original-title', `Total actual: ${ultimo.tapitas_estimadas} tapitas`);
                 }
 
                 const pb = document.getElementById('progress-bar');
                 pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
                                (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
+
                 actualizarTablaAdmin(eventos);
                 renderAdminCharts();
                 renderHeatmap();
@@ -516,11 +517,7 @@
                 }]
             },
             options: {
-                rotation: -90,
-                circumference: 180,
-                cutout: '80%',
-                responsive: true,
-                maintainAspectRatio: false,
+                rotation: -90, circumference: 180, cutout: '80%', responsive: true, maintainAspectRatio: false,
                 layout: { padding: { bottom: 10 } },
                 plugins: { 
                     legend: { display: false },
@@ -540,75 +537,52 @@
         document.getElementById('gauge-text').className = `fw-bold mb-0 text-${valor >= 100 ? 'success' : (valor > 50 ? 'warning' : 'danger')}`;
     }
 
+    // --- CORRECCIÓN DEL MAPA DE CALOR ---
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
         if(!container) return;
-        container.innerHTML = '';
-        for(let i = 27; i >= 0; i--) {
-            const d = document.createElement('div');
-            d.className = 'heatmap-cell';
-            const data = datosEventos[i];
-            if (data) {
-                const intensidad = Math.min(data.tapitas_estimadas / 15, 1);
-                d.style.backgroundColor = 'var(--robot-accent)';
-                d.style.opacity = intensidad + 0.1;
-                d.title = `${new Date(data.timestamp).toLocaleString()}\nTapitas: ${data.tapitas_estimadas}`;
-            }
-            container.appendChild(d);
-        }
-    }
+        container.innerHTML = ''; // Limpiar mapa existente
 
-    function actualizarTablaAdmin(data) {
-        const body = document.getElementById('admin-table-body');
-        if (!body) return;
-        body.innerHTML = data.slice(0,12).map(e => {
-            let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
-            let label = e.nivel_pct > 85 ? "LLENO" : (e.nivel_pct > 60 ? "MEDIO" : "BAJO");
+        // Usar los últimos 28 eventos para llenar la cuadrícula de 7x4
+        for(let i = 0; i < 28; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
             
-            return `
-                <tr>
-                    <td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td>
-                    <td>${e.peso_delta_g}g</td>
-                    <td><span class="badge bg-light text-dark px-3 py-2" style="font-size:0.9rem">${e.tapitas_estimadas}</span></td>
-                    <td class="text-center">
-                        <span class="badge ${badgeClass} badge-llenado">
-                            ${e.nivel_pct}% - ${label}
-                        </span>
-                    </td>
-                    <td class="text-muted">${e.robot_id}</td>
-                </tr>
-            `;
-        }).join('');
+            const eventData = datosEventos[i];
+            
+            if (eventData) {
+                // Calcular intensidad basada en tapitas (ej: objetivo de 15 tapitas por evento para opacidad máxima)
+                const cappedTapitas = Math.min(eventData.tapitas_estimadas, 15);
+                const intensity = (cappedTapitas / 15) * 0.8 + 0.2; // Opacidad entre 0.2 y 1.0
+                
+                // Aplicar el color de acento con opacidad variable
+                cell.style.backgroundColor = `rgba(46, 204, 113, ${intensity})`; // #2ecc71 con alfa
+                
+                // Crear el tooltip para el navegador (atributo title)
+                const dateStr = new Date(eventData.timestamp).toLocaleString();
+                cell.setAttribute('title', `Evento ${i + 1} | Tapitas introducidas: ${eventData.tapitas_estimadas}\nFecha: ${dateStr}`);
+                
+                // Si usas tooltips de Bootstrap avanzados, necesitarías inicializarlo aquí:
+                // cell.setAttribute('data-bs-toggle', 'tooltip');
+                // new bootstrap.Tooltip(cell);
+            }
+            
+            container.appendChild(cell);
+        }
     }
 
     function renderUserCharts(resumen) {
         const ctx = document.getElementById('chartUserHistorial');
         if(!ctx) return;
         if(window.userChart) window.userChart.destroy();
-        const labels = resumen.map(d => {
-            const date = new Date(d.fecha + "T00:00:00");
-            return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
-        }).reverse();
+        const labels = resumen.map(d => d.fecha).reverse();
         window.userChart = new Chart(ctx, {
             type: 'line',
             data: { 
                 labels: labels,
-                datasets: [{ 
-                    label: 'Tapitas', 
-                    data: resumen.map(d => d.total_tapitas).reverse(), 
-                    borderColor: '#2ecc71', 
-                    backgroundColor: 'rgba(46, 204, 113, 0.1)', 
-                    fill: true, 
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#2ecc71'
-                }] 
+                datasets: [{ label: 'Tapitas', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', fill: true }]
             },
-            options: { 
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' } }, x: { grid: { display: false } } }
-            }
+            options: { maintainAspectRatio: false }
         });
     }
 
@@ -620,17 +594,9 @@
             type: 'bar',
             data: { 
                 labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'], 
-                datasets: [{ 
-                    label: 'Tapitas Recolectadas', 
-                    data: [450, 620, 810, 1100], 
-                    backgroundColor: '#198754',
-                    borderRadius: 5
-                }] 
+                datasets: [{ label: 'Tapitas', data: [450, 620, 810, 1100], backgroundColor: '#198754' }] 
             },
-            options: { 
-                maintainAspectRatio: false,
-                scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' } } }
-            }
+            options: { maintainAspectRatio: false }
         });
     }
 
@@ -672,19 +638,20 @@
                 btnLogin.classList.remove('d-none');
             }
         });
+
         document.getElementById('btn-do-login').onclick = async () => {
             const email = document.getElementById('in-email').value;
             const password = document.getElementById('in-pass').value;
             const { error } = await _supabase.auth.signInWithPassword({ email, password });
             if (error) alert("Credenciales incorrectas");
             else {
-                const modalEl = document.getElementById('loginModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                 if(modal) modal.hide();
             }
         };
+
         document.getElementById('btn-logout').onclick = async () => { 
-            await _supabase.auth.signOut();
+            await _supabase.auth.signOut(); 
             location.reload(); 
         };
     }
@@ -695,24 +662,22 @@
         doc.setFontSize(18); doc.setTextColor(25, 135, 84); 
         doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
         doc.setFontSize(10); doc.setTextColor(100);
-        
         const now = new Date().toLocaleString();
         doc.text("Generado el: " + now, 14, 28);
-        
-        // CAMBIO 3: Actualizar fecha de reporte PDF [cite: 322]
         localStorage.setItem('lastPDF', now);
         document.getElementById('label-last-pdf').innerText = now;
-
         const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
-        doc.autoTable({ startY: 35, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
+        doc.autoTable({ startY: 35, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows });
         doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
     }
 
     function exportarCSV() {
         if (datosEventos.length === 0) return;
-        const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
-        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}"`, e.tapitas_estimadas, e.nivel_pct, e.robot_id]);
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFFFecha/Hora,Gramos,Tapitas,Nivel %,ID Robot\n";
+        datosEventos.forEach(e => {
+            const dateStr = new Date(e.timestamp).toLocaleString();
+            csvContent += `"${dateStr}",${e.peso_delta_g},${e.tapitas_estimadas},${e.nivel_pct},"${e.robot_id}"\n`;
+        });
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csvContent));
         link.setAttribute("download", "RobotCap_Data.csv");
