@@ -71,7 +71,6 @@
 
         .h-large { height: 320px; }
         
-        /* Ajuste para centrar el Gauge */
         .h-gauge { 
             height: 200px; 
             display: flex;
@@ -186,6 +185,7 @@
                         <div class="col-md-3">
                             <label class="form-label small fw-bold">Peso Total Actual (0-3000g)</label>
                             <input type="number" id="m-nivel" class="form-control" required placeholder="Suma total">
+                            <div id="weight-hint" class="form-text text-info" style="font-size: 0.7rem;"></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-bold">ID del Robot</label>
@@ -306,11 +306,10 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let datosEventos = [];
     let tooltipNivel;
+    let ultimoPesoRegistrado = 0; // Para el cálculo de suma en inserción
 
     async function init() {
         gestionarTema();
-        
-        // Inicializar tooltips de Bootstrap
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -326,23 +325,44 @@
     function toggleInsertPanel() {
         const panel = document.getElementById('insert-panel');
         panel.classList.toggle('d-none');
-        if(!panel.classList.contains('d-none')) panel.scrollIntoView({ behavior: 'smooth' });
+        if(!panel.classList.contains('d-none')) {
+            panel.scrollIntoView({ behavior: 'smooth' });
+            // Sugerencia de suma
+            document.getElementById('weight-hint').innerText = `Último peso registrado: ${ultimoPesoRegistrado}g`;
+        }
     }
 
     function configurarInsercionManual() {
         const form = document.getElementById('form-manual-insert');
+        const inputGramos = document.getElementById('m-gramos');
+        const inputNivel = document.getElementById('m-nivel');
+
+        // Lógica de suma automática: al escribir gramos, se sugiere el nuevo total
+        inputGramos.addEventListener('input', () => {
+            const delta = parseFloat(inputGramos.value) || 0;
+            inputNivel.value = ultimoPesoRegistrado + delta;
+        });
+
         if(!form) return;
         form.onsubmit = async (e) => {
             e.preventDefault();
+            
+            const gramos = parseFloat(document.getElementById('m-gramos').value);
+            const pesoIngresado = parseFloat(document.getElementById('m-nivel').value);
+            
+            // Verificación de reducción de peso
+            if (pesoIngresado < ultimoPesoRegistrado) {
+                const confirmar = confirm(`El peso ingresado (${pesoIngresado}g) es menor al anterior (${ultimoPesoRegistrado}g). ¿Deseas reducir el peso actual del contenedor? (Ej: Tras un vaciado)`);
+                if (!confirmar) return;
+            }
+
             const btn = e.target.querySelector('button[type="submit"]');
             btn.disabled = true;
             btn.innerText = "Guardando...";
 
-            const gramos = parseFloat(document.getElementById('m-gramos').value);
             const tapitas = parseInt(document.getElementById('m-tapitas').value);
-            const pesoTotalActual = parseFloat(document.getElementById('m-nivel').value);
             const robotId = document.getElementById('m-robot').value;
-            const nivelPct = Math.min(Math.round((pesoTotalActual / 3000) * 100), 100);
+            const nivelPct = Math.min(Math.round((pesoIngresado / 3000) * 100), 100);
 
             const { error } = await _supabase.from('eventos_insercion').insert([
                 { 
@@ -394,10 +414,13 @@
             if (eventos && eventos.length > 0) {
                 datosEventos = eventos;
                 const ultimo = eventos[0];
+                
+                // Actualizar referencia global de peso
+                ultimoPesoRegistrado = (ultimo.nivel_pct / 100) * 3000;
+
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
                 
-                // ACTUALIZACIÓN CAMBIO 3: Tooltip dinámico con tapitas actuales
                 if(tooltipNivel) {
                     const cardNivel = document.getElementById('card-nivel');
                     cardNivel.setAttribute('data-bs-original-title', `Total actual: ${ultimo.tapitas_estimadas} tapitas`);
@@ -438,18 +461,14 @@
                 cutout: '80%',
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: {
-                    padding: { bottom: 10 }
-                },
+                layout: { padding: { bottom: 10 } },
                 plugins: { 
                     legend: { display: false },
                     tooltip: { 
                         enabled: true,
                         callbacks: {
                             label: function(context) {
-                                if (context.dataIndex === 0) {
-                                    return ` Recolectadas: ${tapitasActuales} tapitas (${valor}%)`;
-                                }
+                                if (context.dataIndex === 0) return ` Recolectadas: ${tapitasActuales} tapitas (${valor}%)`;
                                 return ` Falta: ${Math.max(0, 50 - tapitasActuales)} para el objetivo`;
                             }
                         }
@@ -483,8 +502,9 @@
         const body = document.getElementById('admin-table-body');
         if (!body) return;
         body.innerHTML = data.slice(0,12).map(e => {
+            // CAMBIO SOLICITADO: Ajuste de colores y etiquetas
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
-            let label = e.nivel_pct > 85 ? "CRÍTICO" : (e.nivel_pct > 60 ? "MEDIO" : "ESTABLE");
+            let label = e.nivel_pct > 85 ? "LLENO" : (e.nivel_pct > 60 ? "MEDIO" : "BAJO");
             
             return `
                 <tr>
