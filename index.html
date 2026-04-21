@@ -66,6 +66,7 @@
         #user-role.badge { background-color: #6c757d !important; color: white !important; padding: 8px 12px; }
         #user-role.badge.admin-active { background-color: #0d6efd !important; }
 
+        /* Clases de control de vista */
         .admin-only { display: none !important; }
         .user-only { display: flex !important; } 
 
@@ -462,22 +463,26 @@
             const userView = document.getElementById('user-view'); 
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
+            const roleBadge = document.getElementById('user-role');
             
             if (session) {
-                // AJUSTE 1: En vista Admin se OCULTAN las graficas de usuario
+                // CAMBIO CLAVE: Al ser Admin, ocultamos totalmente la vista de usuario y mostramos la de admin
                 adminView.classList.remove('admin-only');
                 userView.classList.add('d-none');
+                
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
-                document.getElementById('user-role').innerText = "Administrador";
-                document.getElementById('user-role').classList.add('admin-active');
+                roleBadge.innerText = "Administrador";
+                roleBadge.classList.add('admin-active');
             } else {
+                // Al ser invitado, ocultamos la vista de admin y mostramos la de usuario
                 adminView.classList.add('admin-only');
                 userView.classList.remove('d-none');
+                
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
-                document.getElementById('user-role').innerText = "Invitado";
-                document.getElementById('user-role').classList.remove('admin-active');
+                roleBadge.innerText = "Invitado";
+                roleBadge.classList.remove('admin-active');
             }
         });
         
@@ -580,10 +585,15 @@
             e.peso_delta_g,
             e.tapitas_estimadas,
             e.nivel_pct,
-            e.robot_id
+            `"${e.robot_id}"`
         ]);
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
-        window.open(encodeURI(csvContent));
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Data_RobotCap_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
     }
 
     document.addEventListener('DOMContentLoaded', init);
