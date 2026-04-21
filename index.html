@@ -93,14 +93,14 @@
         .heatmap-cell { 
             aspect-ratio: 1;
             border-radius: 6px; 
-            background-color: var(--robot-accent); 
+            background-color: #2a2a2a; 
             cursor: pointer; 
             transition: all 0.2s; 
         }
-        [data-bs-theme="dark"] .heatmap-cell { background-color: #2a2a2a; }
         [data-bs-theme="light"] .heatmap-cell { background-color: #e9ecef; }
 
         .heatmap-cell:hover { transform: scale(1.15); filter: brightness(1.2); z-index: 2; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+        .heatmap-cell.active { border: 2px solid white; box-shadow: 0 0 15px var(--robot-accent); }
 
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .dot-green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; animation: blink 2s infinite; }
@@ -165,23 +165,15 @@
                     <div class="col-md-3"><button class="btn btn-outline-danger btn-action w-100" id="btn-reset-db" onclick="resetearSistema()">🧹 Reset Sistema</button></div>
                 </div>
                 <div class="row g-2 border-top pt-2">
-                    <div class="col-md-6">
-                        <small class="text-muted fw-bold">📅 ÚLTIMO RESET:</small> 
-                        <span id="label-last-reset" class="small ms-2">Nunca</span>
-                    </div>
-                    <div class="col-md-6 text-md-end">
-                        <small class="text-muted fw-bold">📄 ÚLTIMO REPORTE PDF:</small> 
-                        <span id="label-last-pdf" class="small ms-2">Nunca</span>
-                    </div>
+                    <div class="col-md-6"><small class="text-muted fw-bold">📅 ÚLTIMO RESET:</small> <span id="label-last-reset" class="small ms-2">Nunca</span></div>
+                    <div class="col-md-6 text-md-end"><small class="text-muted fw-bold">📄 ÚLTIMO REPORTE PDF:</small> <span id="label-last-pdf" class="small ms-2">Nunca</span></div>
                 </div>
             </div>
         </div>
 
         <div class="col-12 d-none" id="insert-panel">
             <div class="card border-primary">
-                <div class="card-header-custom bg-primary" style="background-color: #0d6efd !important;">
-                    🛠️ Inserción Manual de Datos (DB)
-                </div>
+                <div class="card-header-custom bg-primary" style="background-color: #0d6efd !important;">🛠️ Inserción Manual de Datos (DB)</div>
                 <div class="card-body p-4">
                     <form id="form-manual-insert" class="row g-3">
                         <div class="col-md-3">
@@ -210,27 +202,6 @@
             </div>
         </div>
 
-        <div class="col-md-8">
-            <div class="card h-100">
-                <div class="card-header-custom">📊 Comparativo: Crecimiento Semanal</div>
-                <div class="card-body" style="height: 280px;"><canvas id="chartAdminComparativo"></canvas></div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header-custom">🖥️ STATUS HARDWARE</div>
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <div class="mb-4 text-center"><span class="status-dot dot-green"></span> MQTT Broker: <b class="text-success">Online</b></div>
-                    <div class="row text-center g-2 border-top pt-4">
-                        <div class="col-4"><small class="text-muted d-block">CPU</small><b class="fs-5">45%</b></div>
-                        <div class="col-4"><small class="text-muted d-block">RAM</small><b class="fs-5">312MB</b></div>
-                        <div class="col-4"><small class="text-muted d-block">TEMP</small><b class="text-warning fs-5">52°C</b></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="col-12">
             <div class="card">
                 <div class="card-header-custom d-flex justify-content-between align-items-center">
@@ -241,13 +212,7 @@
                     <div class="table-responsive" style="max-height: 400px;">
                         <table class="table table-hover table-mini mb-0">
                             <thead class="table-dark">
-                                <tr>
-                                    <th>Fecha/Hora</th>
-                                    <th>Gramos</th>
-                                    <th>Tapitas</th>
-                                    <th class="text-center">Estado Llenado</th>
-                                    <th>ID Robot</th>
-                                </tr>
+                                <tr><th>Fecha/Hora</th><th>Gramos</th><th>Tapitas</th><th class="text-center">Estado Llenado</th><th>ID Robot</th></tr>
                             </thead>
                             <tbody id="admin-table-body"></tbody>
                         </table>
@@ -260,7 +225,10 @@
     <div id="user-view" class="row g-4 user-only">
         <div class="col-12">
             <div class="card">
-                <div class="card-header-custom">📅 Historial de Recolección (7 días)</div>
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <span id="chart-title">📅 Historial de Recolección (7 días)</span>
+                    <button id="btn-reset-filter" class="btn btn-sm btn-light d-none" onclick="cargarDatos()">Ver Todo</button>
+                </div>
                 <div class="card-body h-large"><canvas id="chartUserHistorial"></canvas></div>
             </div>
         </div>
@@ -321,126 +289,41 @@
     async function init() {
         gestionarTema();
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+        tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
         tooltipNivel = bootstrap.Tooltip.getInstance(document.getElementById('card-nivel'));
-
         document.getElementById('label-last-reset').innerText = localStorage.getItem('lastReset') || "Nunca";
         document.getElementById('label-last-pdf').innerText = localStorage.getItem('lastPDF') || "Nunca";
-
         await cargarDatos();
         configurarAuth();
         configurarInsercionManual();
         setInterval(cargarDatos, 30000);
     }
 
-    async function resetearSistema() {
-        const confirm1 = confirm("⚠️ ¡ATENCIÓN! ¿Estás seguro de que deseas borrar TODOS los registros de recolección? Esta acción no se puede deshacer.");
-        if (!confirm1) return;
-        const confirm2 = confirm("¿Realmente deseas vaciar la base de datos de eventos? Los gráficos volverán a cero.");
-        if (!confirm2) return;
-
-        const btn = document.getElementById('btn-reset-db');
-        btn.disabled = true;
-        btn.innerText = "Limpiando...";
+    async function cargarDatos(fechaFiltro = null) {
         try {
-            const { error } = await _supabase.from('eventos_insercion').delete().neq('robot_id', 'RESERVED_VOID_ID');
-            if (error) {
-                alert("Error al resetear: " + error.message);
-            } else {
-                const now = new Date().toLocaleString();
-                localStorage.setItem('lastReset', now);
-                document.getElementById('label-last-reset').innerText = now;
-                alert("✅ Sistema reseteado con éxito.");
-                ultimoPesoRegistrado = 0;
-                document.getElementById('stat-tapitas').innerText = "0";
-                document.getElementById('stat-peso').innerText = "0g";
-                document.getElementById('fill-pct').innerText = "0%";
-                document.getElementById('progress-bar').style.width = "0%";
-                await cargarDatos();
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "🧹 Reset Sistema";
-        }
-    }
-
-    function toggleInsertPanel() {
-        const panel = document.getElementById('insert-panel');
-        panel.classList.toggle('d-none');
-        if(!panel.classList.contains('d-none')) {
-            panel.scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('weight-hint').innerText = `Último peso registrado: ${ultimoPesoRegistrado}g`;
-        }
-    }
-
-    function configurarInsercionManual() {
-        const form = document.getElementById('form-manual-insert');
-        const inputGramos = document.getElementById('m-gramos');
-        const inputNivel = document.getElementById('m-nivel');
-
-        inputGramos.addEventListener('input', () => {
-            const delta = parseFloat(inputGramos.value) || 0;
-            inputNivel.value = ultimoPesoRegistrado + delta;
-        });
-        if(!form) return;
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const gramos = parseFloat(document.getElementById('m-gramos').value);
-            const pesoIngresado = parseFloat(document.getElementById('m-nivel').value);
-            
-            if (pesoIngresado < ultimoPesoRegistrado) {
-                const confirmar = confirm(`El peso ingresado (${pesoIngresado}g) es menor al anterior (${ultimoPesoRegistrado}g). ¿Deseas reducir el peso actual del contenedor?`);
-                if (!confirmar) return;
-            }
-
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerText = "Guardando...";
-
-            const tapitas = parseInt(document.getElementById('m-tapitas').value);
-            const robotId = document.getElementById('m-robot').value;
-            const nivelPct = Math.min(Math.round((pesoIngresado / 3000) * 100), 100);
-
-            const { error } = await _supabase.from('eventos_insercion').insert([
-                { 
-                    peso_delta_g: gramos, 
-                    tapitas_estimadas: tapitas, 
-                    nivel_pct: nivelPct,
-                    robot_id: robotId,
-                    timestamp: new Date().toISOString()
-                }
-            ]);
-            if (error) alert("Error: " + error.message);
-            else {
-                form.reset();
-                toggleInsertPanel();
-                await cargarDatos(); 
-            }
-            btn.disabled = false;
-            btn.innerText = "Guardar en Base de Datos";
-        };
-    }
-
-    async function cargarDatos() {
-        try {
+            const btnReset = document.getElementById('btn-reset-filter');
+            const title = document.getElementById('chart-title');
             const { data: resumen } = await _supabase.from('resumen_diario').select('*').order('fecha', { ascending: false }).limit(7);
+            
             if (resumen && resumen.length > 0) {
-                const totalTapitas = resumen.reduce((a, b) => a + b.total_tapitas, 0);
-                const totalGramos = resumen.reduce((a, b) => a + b.total_gramos, 0);
-                document.getElementById('stat-tapitas').innerText = totalTapitas.toLocaleString();
-                document.getElementById('stat-peso').innerText = totalGramos.toFixed(0) + "g";
+                let datosParaGauge = resumen[0];
+                if (fechaFiltro) {
+                    const diaFiltrado = resumen.find(d => d.fecha === fechaFiltro);
+                    if (diaFiltrado) {
+                        datosParaGauge = diaFiltrado;
+                        title.innerText = `📅 Datos del día: ${new Date(fechaFiltro + "T00:00:00").toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+                        btnReset.classList.remove('d-none');
+                    }
+                } else {
+                    title.innerText = "📅 Historial de Recolección (7 días)";
+                    btnReset.classList.add('d-none');
+                }
+
+                document.getElementById('stat-tapitas').innerText = resumen.reduce((a, b) => a + b.total_tapitas, 0).toLocaleString();
+                document.getElementById('stat-peso').innerText = resumen.reduce((a, b) => a + b.total_gramos, 0).toFixed(0) + "g";
                 renderUserCharts(resumen);
-                const objetivo = 50;
-                const tapitasHoy = resumen[0].total_tapitas;
-                const ritmo = Math.round((tapitasHoy / objetivo) * 100);
-                renderGaugeChart(ritmo, tapitasHoy);
-            } else {
-                document.getElementById('stat-tapitas').innerText = "0";
-                document.getElementById('stat-peso').innerText = "0g";
+                const ritmo = Math.round((datosParaGauge.total_tapitas / 50) * 100);
+                renderGaugeChart(ritmo, datosParaGauge.total_tapitas);
             }
 
             const { data: eventos } = await _supabase.from('eventos_insercion').select('*').order('timestamp', { ascending: false }).limit(50);
@@ -450,27 +333,52 @@
                 ultimoPesoRegistrado = (ultimo.nivel_pct / 100) * 3000;
                 document.getElementById('fill-pct').innerText = ultimo.nivel_pct + "%";
                 document.getElementById('progress-bar').style.width = ultimo.nivel_pct + "%";
-                
-                if(tooltipNivel) {
-                    const cardNivel = document.getElementById('card-nivel');
-                    cardNivel.setAttribute('data-bs-original-title', `Última cantidad de tapitas introducidas: ${ultimo.tapitas_estimadas}`);
-                }
-
-                const pb = document.getElementById('progress-bar');
-                pb.className = "progress-bar progress-bar-striped progress-bar-animated progress-bar-animated-custom " + 
-                               (ultimo.nivel_pct > 85 ? "bg-danger" : (ultimo.nivel_pct > 60 ? "bg-warning" : "bg-success"));
                 actualizarTablaAdmin(eventos);
-                renderAdminCharts();
-                renderHeatmap();
-            } else {
-                datosEventos = [];
-                ultimoPesoRegistrado = 0;
-                document.getElementById('fill-pct').innerText = "0%";
-                document.getElementById('progress-bar').style.width = "0%";
-                const body = document.getElementById('admin-table-body');
-                if(body) body.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin registros</td></tr>';
+                renderHeatmap(fechaFiltro);
             }
         } catch (err) { console.error("Error cargando datos:", err); }
+    }
+
+    function renderHeatmap(fechaActiva = null) {
+        const container = document.getElementById('heatmap-container');
+        if(!container) return;
+        
+        const cells = container.querySelectorAll('.heatmap-cell');
+        cells.forEach(c => { const t = bootstrap.Tooltip.getInstance(c); if(t) t.dispose(); });
+        
+        container.innerHTML = '';
+        for(let i = 27; i >= 0; i--) {
+            const d = document.createElement('div');
+            d.className = 'heatmap-cell';
+            const data = datosEventos[i];
+            
+            if (data) {
+                const fechaISO = data.timestamp.split('T')[0];
+                if (fechaISO === fechaActiva) d.classList.add('active');
+
+                // PALETA DE VERDES SEGÚN CANTIDAD DE TAPITAS
+                const t = data.tapitas_estimadas;
+                let color = "#1b4332"; // Muy oscuro (base)
+                if (t > 20) color = "#2ecc71"; // Verde brillante (máximo)
+                else if (t > 15) color = "#40916c";
+                else if (t > 10) color = "#52b788";
+                else if (t > 5) color = "#74c69d";
+                else color = "#95d5b2"; // Verde muy claro
+
+                d.style.backgroundColor = color;
+                d.style.opacity = "1";
+
+                d.setAttribute('data-bs-toggle', 'tooltip');
+                d.setAttribute('data-bs-html', 'true');
+                const fechaT = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const dia = new Date(data.timestamp).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                
+                d.setAttribute('title', `<div class="text-center p-1"><small class="d-block border-bottom mb-1 pb-1">${dia}</small><span class="fw-bold">${t} tapitas</span><br><small>A las ${fechaT}</small></div>`);
+                new bootstrap.Tooltip(d);
+                d.onclick = () => cargarDatos(fechaISO);
+            }
+            container.appendChild(d);
+        }
     }
 
     function renderGaugeChart(valor, tapitasActuales) {
@@ -482,80 +390,27 @@
             type: 'doughnut',
             data: {
                 labels: ['Completado', 'Restante'],
-                datasets: [{
-                    data: [Math.min(valor, 100), Math.max(0, 100 - valor)],
-                    backgroundColor: [color, 'rgba(128,128,128,0.1)'],
-                    borderWidth: 0
-                }]
+                datasets: [{ data: [Math.min(valor, 100), Math.max(0, 100 - valor)], backgroundColor: [color, 'rgba(128,128,128,0.1)'], borderWidth: 0 }]
             },
-            options: {
-                rotation: -90,
-                circumference: 180,
-                cutout: '80%',
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: { padding: { bottom: 10 } },
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: { 
-                        enabled: true,
-                        callbacks: {
-                            label: function(context) {
-                                if (context.dataIndex === 0) return ` Recolectadas: ${tapitasActuales} tapitas (${valor}%)`;
-                                return ` Falta: ${Math.max(0, 50 - tapitasActuales)} para el objetivo`;
-                            }
-                        }
-                    } 
-                }
-            }
+            options: { rotation: -90, circumference: 180, cutout: '80%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
         document.getElementById('gauge-text').innerText = valor + "%";
         document.getElementById('gauge-text').className = `fw-bold mb-0 text-${valor >= 100 ? 'success' : (valor > 50 ? 'warning' : 'danger')}`;
     }
 
-    // --- FUNCIÓN ACTUALIZADA: RENDERHEATMAP CON TOOLTIP TIPO GAUCH CHART ---
-    function renderHeatmap() {
-        const container = document.getElementById('heatmap-container');
-        if(!container) return;
-        
-        // Limpieza de tooltips previos para evitar duplicidad
-        const cells = container.querySelectorAll('.heatmap-cell');
-        cells.forEach(c => {
-            const t = bootstrap.Tooltip.getInstance(c);
-            if(t) t.dispose();
+    function renderUserCharts(resumen) {
+        const ctx = document.getElementById('chartUserHistorial');
+        if(!ctx) return;
+        if(window.userChart) window.userChart.destroy();
+        const labels = resumen.map(d => { const date = new Date(d.fecha + "T00:00:00"); return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }); }).reverse();
+        window.userChart = new Chart(ctx, {
+            type: 'line',
+            data: { 
+                labels: labels,
+                datasets: [{ label: 'Tapitas', data: resumen.map(d => d.total_tapitas).reverse(), borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, tension: 0.4 }] 
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
-        
-        container.innerHTML = '';
-        for(let i = 27; i >= 0; i--) {
-            const d = document.createElement('div');
-            d.className = 'heatmap-cell';
-            const data = datosEventos[i];
-            
-            if (data) {
-                const intensidad = Math.min(data.tapitas_estimadas / 15, 1);
-                d.style.backgroundColor = 'var(--robot-accent)';
-                d.style.opacity = intensidad + 0.1;
-
-                // Configuración de Tooltip estilo Bootstrap (similar al de los gráficos)
-                d.setAttribute('data-bs-toggle', 'tooltip');
-                d.setAttribute('data-bs-html', 'true');
-                d.setAttribute('data-bs-placement', 'top');
-                
-                const fecha = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const dia = new Date(data.timestamp).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
-                
-                const tooltipHtml = `
-                    <div class="text-center p-1">
-                        <small class="d-block text-uppercase fw-bold border-bottom mb-1 pb-1" style="font-size: 0.65rem; opacity: 0.8;">${dia}</small>
-                        <span class="fs-6 fw-bold text-success">${data.tapitas_estimadas} tapitas</span><br>
-                        <small class="opacity-75" style="font-size: 0.7rem;">Evento a las ${fecha}</small>
-                    </div>
-                `;
-                d.setAttribute('title', tooltipHtml);
-                new bootstrap.Tooltip(d); // Inicialización individual
-            }
-            container.appendChild(d);
-        }
     }
 
     function actualizarTablaAdmin(data) {
@@ -563,44 +418,8 @@
         if (!body) return;
         body.innerHTML = data.slice(0,12).map(e => {
             let badgeClass = e.nivel_pct > 85 ? "bg-danger" : (e.nivel_pct > 60 ? "bg-warning text-dark" : "bg-success");
-            let label = e.nivel_pct > 85 ? "LLENO" : (e.nivel_pct > 60 ? "MEDIO" : "BAJO");
-            return `<tr><td class="fw-bold">${new Date(e.timestamp).toLocaleString()}</td><td>${e.peso_delta_g}g</td><td><span class="badge bg-light text-dark px-3 py-2" style="font-size:0.9rem">${e.tapitas_estimadas}</span></td><td class="text-center"><span class="badge ${badgeClass} badge-llenado">${e.nivel_pct}% - ${label}</span></td><td class="text-muted">${e.robot_id}</td></tr>`;
+            return `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${e.peso_delta_g}g</td><td>${e.tapitas_estimadas}</td><td class="text-center"><span class="badge ${badgeClass} badge-llenado">${e.nivel_pct}%</span></td><td>${e.robot_id}</td></tr>`;
         }).join('');
-    }
-
-    function renderUserCharts(resumen) {
-        const ctx = document.getElementById('chartUserHistorial');
-        if(!ctx) return;
-        if(window.userChart) window.userChart.destroy();
-        const labels = resumen.map(d => {
-            const date = new Date(d.fecha + "T00:00:00");
-            return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
-        }).reverse();
-        window.userChart = new Chart(ctx, {
-            type: 'line',
-            data: { 
-                labels: labels,
-                datasets: [{ 
-                    label: 'Tapitas', 
-                    data: resumen.map(d => d.total_tapitas).reverse(), 
-                    borderColor: '#2ecc71', 
-                    backgroundColor: 'rgba(46, 204, 113, 0.1)', 
-                    fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#2ecc71'
-                }] 
-            },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' } }, x: { grid: { display: false } } } }
-        });
-    }
-
-    function renderAdminCharts() {
-        const ctx = document.getElementById('chartAdminComparativo');
-        if (!ctx) return;
-        if(window.adminChart) window.adminChart.destroy();
-        window.adminChart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'], datasets: [{ label: 'Tapitas Recolectadas', data: [450, 620, 810, 1100], backgroundColor: '#198754', borderRadius: 5 }] },
-            options: { maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' } } } }
-        });
     }
 
     function gestionarTema() {
@@ -617,66 +436,65 @@
 
     function configurarAuth() {
         _supabase.auth.onAuthStateChange((event, session) => {
-            const badge = document.getElementById('user-role');
             const adminView = document.getElementById('admin-view');
             const userView = document.getElementById('user-view'); 
             const btnLogout = document.getElementById('btn-logout');
             const btnLogin = document.getElementById('btn-show-login');
             if (session) {
-                badge.innerText = "ADMINISTRADOR";
-                badge.classList.add('admin-active');
                 adminView.classList.remove('admin-only');
-                userView.classList.add('d-none'); 
-                userView.classList.remove('user-only');
+                userView.classList.add('d-none');
                 btnLogout.classList.remove('d-none');
                 btnLogin.classList.add('d-none');
             } else {
-                badge.innerText = "Invitado";
-                badge.classList.remove('admin-active');
                 adminView.classList.add('admin-only');
                 userView.classList.remove('d-none');
-                userView.classList.add('user-only');
                 btnLogout.classList.add('d-none');
                 btnLogin.classList.remove('d-none');
             }
         });
         document.getElementById('btn-do-login').onclick = async () => {
-            const email = document.getElementById('in-email').value;
-            const password = document.getElementById('in-pass').value;
-            const { error } = await _supabase.auth.signInWithPassword({ email, password });
-            if (error) alert("Credenciales incorrectas");
-            else {
-                const modalEl = document.getElementById('loginModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                if(modal) modal.hide();
-            }
+            const { error } = await _supabase.auth.signInWithPassword({ email: document.getElementById('in-email').value, password: document.getElementById('in-pass').value });
+            if (error) alert("Error"); else bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
         };
         document.getElementById('btn-logout').onclick = async () => { await _supabase.auth.signOut(); location.reload(); };
+    }
+
+    function configurarInsercionManual() {
+        const form = document.getElementById('form-manual-insert');
+        if(!form) return;
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const gramos = parseFloat(document.getElementById('m-gramos').value);
+            const peso = parseFloat(document.getElementById('m-nivel').value);
+            const tapitas = parseInt(document.getElementById('m-tapitas').value);
+            const { error } = await _supabase.from('eventos_insercion').insert([{ peso_delta_g: gramos, tapitas_estimadas: tapitas, nivel_pct: Math.round((peso/3000)*100), robot_id: document.getElementById('m-robot').value, timestamp: new Date().toISOString() }]);
+            if (!error) { form.reset(); toggleInsertPanel(); await cargarDatos(); }
+        };
+    }
+
+    function toggleInsertPanel() { document.getElementById('insert-panel').classList.toggle('d-none'); }
+
+    async function resetearSistema() {
+        if(confirm("¿Borrar todo?")) {
+            const { error } = await _supabase.from('eventos_insercion').delete().neq('robot_id', 'VOID');
+            if(!error) { localStorage.setItem('lastReset', new Date().toLocaleString()); location.reload(); }
+        }
     }
 
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(18); doc.setTextColor(25, 135, 84); doc.text("ROBOTCAP - REPORTE DE RECOLECCIÓN", 14, 20);
-        doc.setFontSize(10); doc.setTextColor(100);
-        const now = new Date().toLocaleString();
-        doc.text("Generado el: " + now, 14, 28);
-        localStorage.setItem('lastPDF', now);
-        document.getElementById('label-last-pdf').innerText = now;
+        doc.text("REPORTE ROBOTCAP", 14, 20);
         const rows = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g+"g", e.tapitas_estimadas, e.nivel_pct+"%", e.robot_id]);
-        doc.autoTable({ startY: 35, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows, theme: 'grid', headStyles: { fillColor: [25, 135, 84] } });
-        doc.save(`Reporte_RobotCap_${new Date().getTime()}.pdf`);
+        doc.autoTable({ startY: 30, head: [["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"]], body: rows });
+        doc.save("Reporte.pdf");
     }
 
     function exportarCSV() {
-        if (datosEventos.length === 0) return;
-        const encabezados = ["Fecha/Hora", "Gramos", "Tapitas", "Nivel %", "ID Robot"];
-        const filas = datosEventos.map(e => [`"${new Date(e.timestamp).toLocaleString()}"`, `"${e.peso_delta_g}"`, e.tapitas_estimadas, e.nivel_pct, e.robot_id]);
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", "RobotCap_Data.csv");
-        link.click();
+        const encabezados = ["Fecha", "Gramos", "Tapitas", "Nivel", "Robot"];
+        const filas = datosEventos.map(e => [new Date(e.timestamp).toLocaleString(), e.peso_delta_g, e.tapitas_estimadas, e.nivel_pct, e.robot_id]);
+        let csv = "data:text/csv;charset=utf-8," + encabezados.join(",") + "\n" + filas.map(f => f.join(",")).join("\n");
+        window.open(encodeURI(csv));
     }
 
     document.addEventListener('DOMContentLoaded', init);
